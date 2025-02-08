@@ -6,4 +6,8 @@ export const users = pgTable("user", {
   id: text("id")
     .primaryKey()
     .$defaultFn(() => nanoid()),
+  spotifyId: text("spotify_id").notNull().unique(),
+  slug: text().notNull().unique(),
+  email: text().notNull().unique(),
+  image: text("image"),
 });
