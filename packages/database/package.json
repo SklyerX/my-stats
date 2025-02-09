@@ -29,6 +29,7 @@
   },
   "exports": {
     "./schema": "./src/schema.ts",
-    "./database": "./src/database.ts"
+    "./connection": "./src/connection.ts",
+    "./drizzle": "./src/drizzle.ts"
   }
 }

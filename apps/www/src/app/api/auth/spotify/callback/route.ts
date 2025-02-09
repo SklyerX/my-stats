@@ -1,0 +1,204 @@
+import {
+  generateSessionToken,
+  createSession,
+  setSessionTokenCookie,
+} from "@/auth/session";
+import { spotify } from "@/auth/oauth";
+import { cookies } from "next/headers";
+
+import { db } from "@workspace/database/connection";
+import { users, tokens as tokensTable } from "@workspace/database/schema";
+import { ObjectParser } from "@pilcrowjs/object-parser";
+import { encrypt } from "@/lib/encryption";
+
+export async function GET(request: Request): Promise<Response> {
+  const url = new URL(request.url);
+
+  const code = url.searchParams.get("code");
+  const state = url.searchParams.get("state");
+
+  const cookieStore = await cookies();
+  const storedState = cookieStore.get("spotify_oauth_state")?.value ?? null;
+
+  if (code === null || state === null || storedState === null) {
+    return new Response(null, {
+      status: 400,
+    });
+  }
+
+  if (state !== storedState) {
+    return new Response(null, {
+      status: 400,
+    });
+  }
+
+  console.log("entering try/catch clause");
+
+  try {
+    const tokens = await spotify.validateAuthorizationCode(code, null);
+    const accessToken = tokens.accessToken();
+    const refreshToken = tokens.refreshToken();
+    const accessTokenExpiresAt = tokens.accessTokenExpiresAt();
+
+    console.log("access token retrieved");
+
+    const userRequest = new Request("https://api.spotify.com/v1/me");
+    userRequest.headers.set("Authorization", `Bearer ${accessToken}`);
+
+    console.log("fetching user data");
+
+    const userResponse = await fetch(userRequest);
+    const userResult: unknown = await userResponse.json();
+    const userParser = new ObjectParser(userResult);
+
+    const spotifyUserId = userParser.getString("id");
+    const spotifyUserName = userParser.getString("display_name");
+    const spotifyUserEmail = userParser.getString("email");
+    const spotifyUserImage = userParser.getArray("images")[0] as string;
+
+    console.log("fetched user data", spotifyUserId, spotifyUserName);
+
+    const existingUser = await db.query.users.findFirst({
+      where: (fields, { eq }) => eq(fields.spotifyId, spotifyUserId),
+    });
+
+    console.log("does user exist?");
+
+    if (existingUser) {
+      console.log("yes, sending user back");
+      const sessionToken = generateSessionToken();
+      const session = await createSession(sessionToken, existingUser.id);
+
+      setSessionTokenCookie(sessionToken, session.expiresAt);
+
+      await encryptAndStoreTokens({
+        accessToken: accessToken,
+        refreshToken: refreshToken,
+        expiresAt: accessTokenExpiresAt,
+        userId: existingUser.id,
+      });
+
+      return new Response(null, {
+        status: 302,
+        headers: {
+          Location: `/${existingUser.slug}`,
+        },
+      });
+    }
+
+    console.log("no, creating user");
+
+    const [user] = await db
+      .insert(users)
+      .values({
+        email: spotifyUserEmail,
+        slug: spotifyUserName.toLowerCase(),
+        spotifyId: spotifyUserId,
+        image: spotifyUserImage,
+      })
+      .returning();
+
+    console.log("user created");
+
+    if (!user) return new Response("Failed to create user", { status: 500 });
+
+    console.log("user check passed, creating session");
+
+    const sessionToken = generateSessionToken();
+    const session = await createSession(sessionToken, user.id);
+
+    console.log("setting session");
+
+    setSessionTokenCookie(sessionToken, session.expiresAt);
+
+    console.log("encrypting data and redirecting");
+
+    await encryptAndStoreTokens({
+      accessToken: accessToken,
+      refreshToken: refreshToken,
+      expiresAt: accessTokenExpiresAt,
+      userId: user.id,
+      newUser: true,
+    });
+
+    console.log("finished");
+
+    return new Response(null, {
+      status: 302,
+      headers: {
+        Location: `/${user.slug}`,
+      },
+    });
+  } catch (err) {
+    console.error("in auth callback", err);
+    console.log(err);
+
+    return new Response("check console for errors", {
+      status: 500,
+    });
+    // if (err instanceof OAuth2RequestError) {
+    // 	const code = err.code;
+
+    // 	return new Response(code, {
+    // 		status: 400,
+    // 	});
+    // }
+    // if (err instanceof ArcticFetchError) {
+    // 	const cause = err.cause;
+
+    // 	return new Response(JSON.stringify(cause), {
+    // 		status: 400,
+    // 	});
+    // }
+
+    // return new Response(null, {
+    // 	status: 302,
+    // 	headers: {
+    // 		Location: "/login",
+    // 	},
+    // });
+  }
+}
+
+interface Props {
+  accessToken: string;
+  refreshToken: string;
+  expiresAt: Date;
+  userId: string;
+  newUser?: boolean;
+}
+
+async function encryptAndStoreTokens({
+  accessToken,
+  refreshToken,
+  expiresAt,
+  userId,
+  newUser = true,
+}: Props) {
+  const {
+    encryptedData: encryptedAccessToken,
+    iv: accessTokenIv,
+    tag: accessTokenTag,
+  } = encrypt(accessToken);
+  const {
+    encryptedData: encryptedRefreshToken,
+    iv: refreshTokenIv,
+    tag: refreshTokenTag,
+  } = encrypt(refreshToken);
+
+  const dataObject = {
+    accessToken: encryptedAccessToken,
+    accessTokenIv,
+    accessTokenTag,
+    refreshToken: encryptedRefreshToken,
+    refreshTokenIv: refreshTokenIv,
+    refreshTokenTag: refreshTokenTag,
+    expiresAt,
+  };
+
+  if (!newUser) {
+    await db.update(tokensTable).set(dataObject);
+  } else {
+    await db.insert(tokensTable).values({ ...dataObject, userId });
+  }
+}
