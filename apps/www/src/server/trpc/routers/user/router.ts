@@ -1,6 +1,8 @@
-import { z } from "zod";
 import { publicProcedure, router } from "../../root";
+import { topStatsSchema } from "./types";
 
 export const userRouter = router({
-  top: publicProcedure.input(z.string()).query(async ({ ctx, input }) => {}),
+  top: publicProcedure
+    .input(topStatsSchema)
+    .query(async ({ ctx, input }) => {}),
 });

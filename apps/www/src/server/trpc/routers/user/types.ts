@@ -1,7 +1,10 @@
 import { z } from "zod";
 
 export const topStatsSchema = z.object({
-  slug: z.enum(["artists", "tracks", "albums"]),
-  timeRange: z.enum(["short", "medium", "long"]).optional().default("medium"),
-  limit: z.number().min(1).max(50).optional().default(20),
+  time_range: z
+    .enum(["short_term", "medium_term", "long_term"])
+    .nullable()
+    .default("short_term"),
+  limit: z.number().min(1).max(50).nullable().default(50),
+  offset: z.number().min(1).max(50).nullable().default(50),
 });
