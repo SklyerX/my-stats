@@ -54,7 +54,11 @@ export async function GET(request: Request): Promise<Response> {
     const spotifyUserId = userParser.getString("id");
     const spotifyUserName = userParser.getString("display_name");
     const spotifyUserEmail = userParser.getString("email");
-    const spotifyUserImage = userParser.getArray("images")[0] as string;
+    const spotifyUserImage = userParser.getArray("images")[0] as {
+      url: string;
+      width: number;
+      height: number;
+    };
 
     console.log("fetched user data", spotifyUserId, spotifyUserName);
 
@@ -94,7 +98,8 @@ export async function GET(request: Request): Promise<Response> {
         email: spotifyUserEmail,
         slug: spotifyUserName.toLowerCase(),
         spotifyId: spotifyUserId,
-        image: spotifyUserImage,
+        username: spotifyUserName,
+        image: spotifyUserImage.url,
       })
       .returning();
 
