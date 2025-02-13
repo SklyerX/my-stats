@@ -1,4 +1,5 @@
 import { relations } from "drizzle-orm";
+import { varchar } from "drizzle-orm/pg-core";
 import { serial } from "drizzle-orm/pg-core";
 import { text, timestamp, pgTable } from "drizzle-orm/pg-core";
 import { nanoid } from "nanoid";
@@ -9,6 +10,8 @@ export const users = pgTable("user", {
     .$defaultFn(() => nanoid()),
   spotifyId: text("spotify_id").notNull().unique(),
   slug: text().notNull().unique(),
+  username: varchar("username", { length: 30 }).notNull(),
+  bio: varchar("bio", { length: 150 }),
   email: text().notNull().unique(),
   image: text("image"),
 });

@@ -1,4 +1,4 @@
-import { serverClient } from "@/trpc/serverClient";
+import { serverClient } from "@/server/trpc/server-client";
 
 export default async function Home() {
   const todos = await serverClient.getTodos();

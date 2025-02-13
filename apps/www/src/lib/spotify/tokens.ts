@@ -2,7 +2,7 @@ import "server-only";
 
 import { db } from "@workspace/database/connection";
 import { tokens as tokensTable } from "@workspace/database/schema";
-import { decrypt, encrypt } from "./encryption";
+import { decrypt, encrypt } from "../encryption";
 import { eq } from "@workspace/database/drizzle";
 import { env } from "@/env";
 
@@ -16,10 +16,19 @@ export async function updateSpotifyTokens(
   userId: string,
   tokens: SpotifyTokens,
 ) {
-  const expires = new Date(Date.now() + tokens.expires_in * 1000);
+  console.log("in the update function", tokens);
 
   const encryptedAccess = encrypt(tokens.access_token);
-  const encryptedRefresh = encrypt(tokens.refresh_token);
+
+  const now = Date.now();
+  const expires = new Date(now + tokens.expires_in * 1000);
+
+  console.log({
+    setTokenAt: new Date(now).toISOString(),
+    expiresAt: expires.toISOString(),
+    expiresInSeconds: tokens.expires_in,
+    minutesUntilExpiry: (expires.getTime() - now) / (1000 * 60),
+  });
 
   await db
     .update(tokensTable)
@@ -27,9 +36,6 @@ export async function updateSpotifyTokens(
       accessToken: encryptedAccess.encryptedData,
       accessTokenIv: encryptedAccess.iv,
       accessTokenTag: encryptedAccess.tag,
-      refreshToken: encryptedRefresh.encryptedData,
-      refreshTokenIv: encryptedRefresh.iv,
-      refreshTokenTag: encryptedRefresh.tag,
       expiresAt: expires,
     })
     .where(eq(tokensTable.userId, userId));
@@ -60,11 +66,24 @@ export async function getValidSpotifyToken(userId: string): Promise<string> {
     tokens.refreshTokenTag,
   );
 
+  console.log("in the validate function", accessToken);
+
+  const now = Date.now();
+  console.log({
+    currentTime: new Date(now).toISOString(),
+    tokenExpiresAt: tokens.expiresAt.toISOString(),
+    minutesUntilExpiry: (tokens.expiresAt.getTime() - now) / (1000 * 60),
+    isExpired: tokens.expiresAt.getTime() < now,
+  });
+
   if (tokens.expiresAt.getTime() < Date.now()) {
+    console.log("token expired, reloading");
     const tokens = await refreshSpotifyToken(refreshToken);
     await updateSpotifyTokens(userId, tokens);
     return tokens.access_token;
   }
+
+  console.log("token is not expired");
 
   return accessToken;
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { trpc } from "@/trpc/client";
+import { trpc } from "@/server/trpc/client";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { httpBatchLink } from "@trpc/react-query";
 import { ThemeProvider as NextThemesProvider } from "next-themes";
