@@ -1,7 +1,3 @@
-import type { InternalTopUserStats } from "@/types/response";
-import Image from "next/image";
-import { notFound } from "next/navigation";
-import React from "react";
 import UserProfile from "./_components/UserProfile";
 import StatsContainer from "./_components/StatsContainer";
 import { serverClient } from "@/server/trpc/server-client";
