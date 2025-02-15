@@ -1,10 +1,13 @@
 import "server-only";
-
 import { db } from "@workspace/database/connection";
 import { tokens as tokensTable } from "@workspace/database/schema";
 import { decrypt, encrypt } from "../encryption";
 import { eq } from "@workspace/database/drizzle";
 import { env } from "@/env";
+
+// Constants for token management
+const REFRESH_THRESHOLD = 5 * 60; // Refresh if less than 5 minutes remaining
+const EXPIRATION_BUFFER = 60; // 1 minute buffer when storing expiration
 
 interface SpotifyTokens {
   access_token: string;
@@ -16,17 +19,20 @@ export async function updateSpotifyTokens(
   userId: string,
   tokens: SpotifyTokens,
 ) {
-  console.log("in the update function", tokens);
-
   const encryptedAccess = encrypt(tokens.access_token);
 
   const now = Date.now();
-  const expires = new Date(now + tokens.expires_in * 1000);
+  // Subtract buffer from expires_in to account for network latency
+  const expires = new Date(
+    now + (tokens.expires_in - EXPIRATION_BUFFER) * 1000,
+  );
 
+  // Debug logging
   console.log({
     setTokenAt: new Date(now).toISOString(),
     expiresAt: expires.toISOString(),
     expiresInSeconds: tokens.expires_in,
+    effectiveExpiresIn: tokens.expires_in - EXPIRATION_BUFFER,
     minutesUntilExpiry: (expires.getTime() - now) / (1000 * 60),
   });
 
@@ -49,7 +55,7 @@ export async function getValidSpotifyToken(userId: string): Promise<string> {
     },
   });
 
-  if (!user) {
+  if (!user?.tokens) {
     throw new Error("Invalid user Spotify credentials");
   }
 
@@ -66,25 +72,32 @@ export async function getValidSpotifyToken(userId: string): Promise<string> {
     tokens.refreshTokenTag,
   );
 
-  console.log("in the validate function", accessToken);
-
   const now = Date.now();
+  const timeUntilExpiry = tokens.expiresAt.getTime() - now;
+  const minutesUntilExpiry = timeUntilExpiry / (1000 * 60);
+
+  // Debug logging
   console.log({
     currentTime: new Date(now).toISOString(),
     tokenExpiresAt: tokens.expiresAt.toISOString(),
-    minutesUntilExpiry: (tokens.expiresAt.getTime() - now) / (1000 * 60),
-    isExpired: tokens.expiresAt.getTime() < now,
+    minutesUntilExpiry,
+    timeUntilExpiryMs: timeUntilExpiry,
+    shouldRefresh: timeUntilExpiry <= 10 * 60 * 1000, // Refresh if less than 10 minutes left
   });
 
-  if (tokens.expiresAt.getTime() < Date.now()) {
-    console.log("token expired, reloading");
-    const tokens = await refreshSpotifyToken(refreshToken);
-    await updateSpotifyTokens(userId, tokens);
-    return tokens.access_token;
+  if (timeUntilExpiry <= 10 * 60 * 1000) {
+    // Refresh if less than 10 minutes remaining
+    console.log(
+      `Token expires soon, refreshing with ${minutesUntilExpiry.toFixed(2)} minutes remaining`,
+    );
+    const newTokens = await refreshSpotifyToken(refreshToken);
+    await updateSpotifyTokens(userId, newTokens);
+    return newTokens.access_token;
   }
 
-  console.log("token is not expired");
-
+  console.log(
+    `Using existing token with ${minutesUntilExpiry.toFixed(2)} minutes remaining`,
+  );
   return accessToken;
 }
 

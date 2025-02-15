@@ -22,7 +22,10 @@ export class TopStatsAnalyzer {
     request.headers.set("Authorization", `Bearer ${this.token}`);
 
     const response = await fetch(request);
-    if (!response.ok) throw new Error(`Failed to fetch ${endpoint}`);
+    if (!response.ok) {
+      console.log(response);
+      throw new Error(`Failed to fetch ${endpoint}`);
+    }
 
     return response.json() as T;
   }

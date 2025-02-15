@@ -10,6 +10,7 @@ import { db } from "@workspace/database/connection";
 import { users, tokens as tokensTable } from "@workspace/database/schema";
 import { ObjectParser } from "@pilcrowjs/object-parser";
 import { encrypt } from "@/lib/encryption";
+import { eq } from "@workspace/database/drizzle";
 
 export async function GET(request: Request): Promise<Response> {
   const url = new URL(request.url);
@@ -40,7 +41,7 @@ export async function GET(request: Request): Promise<Response> {
     const refreshToken = tokens.refreshToken();
     const accessTokenExpiresAt = tokens.accessTokenExpiresAt();
 
-    console.log("access token retrieved");
+    console.log("access token retrieved", { accessTokenExpiresAt });
 
     const userRequest = new Request("https://api.spotify.com/v1/me");
     userRequest.headers.set("Authorization", `Bearer ${accessToken}`);
@@ -67,6 +68,15 @@ export async function GET(request: Request): Promise<Response> {
     });
 
     console.log("does user exist?");
+
+    console.log({
+      spotifyTokenInfo: {
+        rawExpiresAt: tokens.accessTokenExpiresAt(),
+        currentTime: new Date(),
+        timeUntilExpiry:
+          (tokens.accessTokenExpiresAt().getTime() - Date.now()) / 1000,
+      },
+    });
 
     if (existingUser) {
       console.log("yes, sending user back");
@@ -164,11 +174,10 @@ export async function GET(request: Request): Promise<Response> {
     // });
   }
 }
-
 interface Props {
   accessToken: string;
   refreshToken: string;
-  expiresAt: Date;
+  expiresAt: Date; // You're passing in the OAuth date
   userId: string;
   newUser?: boolean;
 }
@@ -180,6 +189,15 @@ async function encryptAndStoreTokens({
   userId,
   newUser = true,
 }: Props) {
+  const now = new Date();
+  console.log({
+    tokenStorageInfo: {
+      serverTime: now.toISOString(),
+      receivedExpiresAt: expiresAt.toISOString(),
+      timeUntilExpiry: (expiresAt.getTime() - now.getTime()) / 1000,
+    },
+  });
+
   const {
     encryptedData: encryptedAccessToken,
     iv: accessTokenIv,
@@ -191,6 +209,8 @@ async function encryptAndStoreTokens({
     tag: refreshTokenTag,
   } = encrypt(refreshToken);
 
+  const bufferedExpiresAt = new Date(expiresAt.getTime() - 5 * 60 * 1000);
+
   const dataObject = {
     accessToken: encryptedAccessToken,
     accessTokenIv,
@@ -198,11 +218,14 @@ async function encryptAndStoreTokens({
     refreshToken: encryptedRefreshToken,
     refreshTokenIv: refreshTokenIv,
     refreshTokenTag: refreshTokenTag,
-    expiresAt,
+    expiresAt: bufferedExpiresAt,
   };
 
   if (!newUser) {
-    await db.update(tokensTable).set(dataObject);
+    await db
+      .update(tokensTable)
+      .set(dataObject)
+      .where(eq(tokensTable.userId, userId));
   } else {
     await db.insert(tokensTable).values({ ...dataObject, userId });
   }

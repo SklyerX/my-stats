@@ -1,9 +1,8 @@
-import { publicProcedure, router } from "../root";
+import { router } from "../root";
+import { userRouter } from "./user/router";
 
 export const appRouter = router({
-  getTodos: publicProcedure.query(async () => {
-    return [1, 2, 3, 4];
-  }),
+  user: userRouter,
 });
 
 export type AppRouter = typeof appRouter;

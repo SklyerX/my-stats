@@ -186,7 +186,8 @@ export interface AlbumStats extends Album {
   occurrences: number;
 }
 
-export type TIME_RANGE = "short_term" | "medium_term" | "long_term";
+export const TIME_RANGES = ["short_term", "medium_term", "long_term"] as const;
+export type TIME_RANGE = (typeof TIME_RANGES)[number];
 
 export interface StatsResponse {
   tracks: Track[];
