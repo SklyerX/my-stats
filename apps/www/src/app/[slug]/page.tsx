@@ -26,7 +26,7 @@ export default async function UserPage({ params, searchParams }: Props) {
   ]);
 
   return (
-    <div className="container mx-auto max-w-5xl w-full mt-20">
+    <div>
       <UserProfile user={data.user} />
       <StatsContainer
         initialStats={data.stats}
