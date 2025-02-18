@@ -1,5 +1,6 @@
 import { relations } from "drizzle-orm";
 import { varchar } from "drizzle-orm/pg-core";
+import { integer } from "drizzle-orm/pg-core";
 import { serial } from "drizzle-orm/pg-core";
 import { text, timestamp, pgTable } from "drizzle-orm/pg-core";
 import { nanoid } from "nanoid";
@@ -25,6 +26,17 @@ export const sessions = pgTable("sessions", {
     withTimezone: true,
     mode: "date",
   }).notNull(),
+});
+
+export const artists = pgTable("artists", {
+  id: serial("id").primaryKey(),
+  artistId: text("artist_id").notNull(),
+  name: varchar("name", { length: 255 }).notNull(),
+  genres: text("genres").array().notNull().default([]),
+  imageUrl: varchar("image_url"),
+  updatedAt: timestamp("updated_at").defaultNow(),
+  popularity: integer("popularity"),
+  followerAmount: integer("follower_amount"),
 });
 
 export const tokens = pgTable("tokens", {
@@ -65,3 +77,4 @@ export const tokensRelations = relations(tokens, ({ one }) => ({
 
 export type User = typeof users.$inferSelect;
 export type Session = typeof sessions.$inferSelect;
+export type Artists = typeof artists.$inferSelect;

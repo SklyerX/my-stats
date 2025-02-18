@@ -10,6 +10,8 @@ import { headers } from "next/headers";
 import type { InternalTopUserStats } from "@/types/response";
 import { z } from "zod";
 import type { RecentlyPlayedResponse } from "@/types/spotify";
+import { processArtistTask } from "@/trigger/process-artist";
+import { waitUntil } from "@vercel/functions";
 
 export const userRouter = router({
   top: publicProcedure
@@ -110,6 +112,16 @@ export const userRouter = router({
         console.log(`[${requestId}] 💾 Redis SET for key: ${cacheKey}`);
 
         const redisSetStart = Date.now();
+
+        console.log("running trigger.dev");
+        const triggerDevStart = Date.now();
+
+        await processArtistTask.trigger({
+          artists: stats.artists,
+          accessToken,
+        });
+
+        console.log(`end of trigger.dev in ${Date.now() - triggerDevStart}ms`);
 
         await redis.set(cacheKey, stats, {
           ex: CACHE_TIMES[time_range],
