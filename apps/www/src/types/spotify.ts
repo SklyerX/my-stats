@@ -195,3 +195,17 @@ export interface StatsResponse {
   albums: AlbumStats[];
   genres: string[];
 }
+
+export interface ArtistAlbumsResponse {
+  href: string;
+  limit: number;
+  next: string;
+  offset: number;
+  previous: string;
+  total: number;
+  items: Album[];
+}
+
+export interface ArtistTopTracksResponse {
+  tracks: Track[];
+}

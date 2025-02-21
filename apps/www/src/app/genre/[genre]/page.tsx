@@ -1,4 +1,4 @@
-import { toTitleCase } from "@/lib/utils";
+import { formatFollowerCount, toTitleCase } from "@/lib/utils";
 import { serverClient } from "@/server/trpc/server-client";
 import { cookies } from "next/headers";
 import Link from "next/link";
@@ -9,14 +9,6 @@ interface Props {
   params: {
     genre: string;
   };
-}
-
-function formatFollowerCount(count: number): string {
-  const f = Intl.NumberFormat(undefined, {
-    notation: "compact",
-  });
-
-  return f.format(count);
 }
 
 export default async function GenresPage({ params }: Props) {

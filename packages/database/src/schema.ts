@@ -1,5 +1,7 @@
 import { relations } from "drizzle-orm";
 import { varchar } from "drizzle-orm/pg-core";
+import { jsonb } from "drizzle-orm/pg-core";
+import { index } from "drizzle-orm/pg-core";
 import { integer } from "drizzle-orm/pg-core";
 import { serial } from "drizzle-orm/pg-core";
 import { text, timestamp, pgTable } from "drizzle-orm/pg-core";
@@ -37,6 +39,15 @@ export const artists = pgTable("artists", {
   updatedAt: timestamp("updated_at").defaultNow(),
   popularity: integer("popularity"),
   followerAmount: integer("follower_amount"),
+});
+
+export const artistsStats = pgTable("artists_stats", {
+  artistId: text("artist_id")
+    .primaryKey()
+    .references(() => artists.id),
+  topTracks: jsonb().notNull(),
+  topAlbums: jsonb().notNull(),
+  lastUpdated: timestamp().notNull().defaultNow(),
 });
 
 export const tokens = pgTable("tokens", {

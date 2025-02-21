@@ -6,6 +6,9 @@ export const CACHE_KEYS = {
   top: (userId: string, time_range: TIME_RANGE) =>
     `top:${userId}:${time_range}`,
   recentlyPlayed: (userId: string) => `recently-played:${userId}`,
+  artistStats: (artistId: string) => `artist-stats:${artistId}`,
+  artistsQueue: (artistId: string) => `artist-stats-queue:${artistId}`,
+  systemSpotifyToken: () => "system_spotify_token",
 };
 
 export const CACHE_TIMES = {
@@ -13,6 +16,7 @@ export const CACHE_TIMES = {
   medium_term: 7200,
   long_term: 14400,
   recentlyPlayed: 600,
+  artistStats: 604800,
 };
 
 export const TIME_RANGE_TEXT: Record<TIME_RANGE, string> = {
