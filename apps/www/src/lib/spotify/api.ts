@@ -25,7 +25,7 @@ export class SpotifyAPI {
     }
 
     const request = new Request(
-      `${SPOTIFY_BASE_API}${endpoint}/?${queryParams.toString()}`,
+      `${SPOTIFY_BASE_API}${endpoint}${queryParams.toString() ? `?${queryParams.toString()}` : ""}`,
     );
 
     request.headers.set("Authorization", `Bearer ${this.accessToken}`);
@@ -34,7 +34,8 @@ export class SpotifyAPI {
 
     if (!response.ok) {
       console.log(response);
-      console.log("FULL URL", request.url);
+      console.log(response.headers);
+      console.log("FULL URL", response.url);
       throw new Error(`Failed to fetch ${endpoint}`);
     }
 

@@ -32,7 +32,7 @@ export const sessions = pgTable("sessions", {
 
 export const artists = pgTable("artists", {
   id: serial("id").primaryKey(),
-  artistId: text("artist_id").notNull(),
+  artistId: text("artist_id").notNull().unique(),
   name: varchar("name", { length: 255 }).notNull(),
   genres: text("genres").array().notNull().default([]),
   imageUrl: varchar("image_url"),

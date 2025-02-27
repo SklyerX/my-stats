@@ -2,7 +2,7 @@ import { CACHE_KEYS } from "@/lib/constants";
 import { redis } from "@/lib/redis";
 import { SpotifyAPI } from "@/lib/spotify/api";
 import { getSystemAccessToken } from "@/lib/spotify/system";
-import { task } from "@trigger.dev/sdk/v3";
+import { logger, task, timeout } from "@trigger.dev/sdk/v3";
 
 interface AlbumScores {
   score: number;
@@ -12,7 +12,7 @@ interface AlbumScores {
 
 export const processArtistStatsTask = task({
   id: "process-artist-stats",
-  maxDuration: 300,
+  maxDuration: 600,
   run: async (
     payload: {
       artistId: string;
@@ -28,12 +28,18 @@ export const processArtistStatsTask = task({
 
     const spotifyApi = new SpotifyAPI(accessToken);
 
+    logger.info(`Fetching top tracks and albums for ${artistId}`);
+
     const [topTracks, albums] = await Promise.all([
       spotifyApi.getArtistTopTracks(artistId),
       spotifyApi.getArtistAlbums(artistId),
     ]);
 
     const albumScores = new Map<string, AlbumScores>();
+
+    logger.info(
+      `Processing artist stats for ${artistId} - fetch for top tracks and albums done`,
+    );
 
     topTracks.tracks.forEach((track, index) => {
       const albumId = track.album.id;
@@ -49,6 +55,8 @@ export const processArtistStatsTask = task({
       score.score += 50 - index;
       score.topTrackCount++;
       score.highestPosition = Math.min(score.highestPosition, index);
+
+      logger.info(`Processed ${index}/${topTracks.tracks.length} top tracks`);
     });
 
     const scoredAlbums = albums.items

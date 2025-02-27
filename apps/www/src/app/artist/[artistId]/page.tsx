@@ -1,7 +1,10 @@
 import { AnimatedAlbum, AnimatedTrack } from "@/components/wrappers/animated";
+import { logger } from "@/lib/logger";
 import { formatFollowerCount } from "@/lib/utils";
 import { serverClient } from "@/server/trpc/server-client";
 import { Artists } from "@workspace/database/schema";
+import { Skeleton } from "@workspace/ui/components/skeleton";
+import { Hourglass } from "lucide-react";
 import Link from "next/link";
 import { FaSpotify } from "react-icons/fa";
 
@@ -46,7 +49,14 @@ export default async function ArtistsPage({ params }: Props) {
           </div>
         </div>
       ) : (
-        <div>skeleton</div>
+        <div className="flex items-center gap-10">
+          <Skeleton className="w-40 h-40 rounded-full" />
+          <div>
+            <Skeleton className="w-40 h-6" />
+            <Skeleton className="w-12 h-6 mt-2" />
+            <Skeleton className="w-7 h-7 mt-3 rounded-full" />
+          </div>
+        </div>
       )}
       <div className="flex flex-col mt-10">
         <p className="font-semibold text-xl">
@@ -76,46 +86,76 @@ export default async function ArtistsPage({ params }: Props) {
         <p className="text-muted-foreground mt-px">
           {data?.artist?.name}'s top albums
         </p>
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7 gap-5 mt-5">
-          {data?.stats?.topAlbums.map((album, i) => (
-            <AnimatedAlbum key={album.id} album={album} index={i} />
-          ))}
-        </div>
+        {data?.status === "initiated" ? (
+          <div className="mt-5 flex items-center gap-2 text-muted-foreground justify-center">
+            <Hourglass className="size-4" />
+            <h3 className="text-lg">
+              Oh no! Looks like we're still processing the albums for{" "}
+              {data?.artist?.name || "this artist"}
+            </h3>
+          </div>
+        ) : (
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7 gap-5 mt-5">
+            {data?.stats?.topAlbums.map((album, i) => (
+              <AnimatedAlbum key={album.id} album={album} index={i} />
+            ))}
+          </div>
+        )}
       </div>
       <div>
         <h3 className="text-3xl font-semibold">Top Tracks</h3>
         <p className="text-muted-foreground mt-px">
           {data?.artist?.name}'s top tracks
         </p>
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7 gap-5 mt-5">
-          {data?.stats?.topTracks.tracks.map((track, i) => (
-            <AnimatedTrack
-              key={track.id}
-              track={track}
-              index={i}
-              withCrown={false}
-            />
-          ))}
-        </div>
+        {data?.status === "initiated" ? (
+          <div className="mt-5 flex items-center gap-2 text-muted-foreground justify-center">
+            <Hourglass className="size-4" />
+            <h3 className="text-lg">
+              Oh no! Looks like we're still processing the tracks for{" "}
+              {data?.artist?.name || "this artist"}
+            </h3>
+          </div>
+        ) : (
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7 gap-5 mt-5">
+            {data?.stats?.topTracks.tracks.map((track, i) => (
+              <AnimatedTrack
+                key={track.id}
+                track={track}
+                index={i}
+                withCrown={false}
+              />
+            ))}
+          </div>
+        )}
       </div>
       <div>
         <h3 className="text-3xl font-semibold">Related Artist</h3>
-        <div className="flex items-center flex-wrap gap-5 mt-5">
-          {relatedArtists.data?.map((artist) => (
-            <Link
-              href={`/artist/${artist.artistId}`}
-              className="flex items-center gap-5"
-              key={artist.id}
-            >
-              <img
-                src={artist.imageUrl || "https://via.placeholder.com/1000"}
-                className="w-10 h-10 rounded-full"
-                alt={`${artist.name}'s Spotify Profile`}
-              />
-              <h3 className="text-xl font-semibold">{artist.name}</h3>
-            </Link>
-          ))}
-        </div>
+        {relatedArtists.status === "processing" ? (
+          <div className="mt-5 flex items-center gap-2 text-muted-foreground justify-center">
+            <Hourglass className="size-4" />
+            <h3 className="text-lg">
+              Oh no! Looks like we're still processing the related artists for{" "}
+              {data?.artist?.name || "this artist"}
+            </h3>
+          </div>
+        ) : (
+          <div className="flex items-center flex-wrap gap-5 mt-5">
+            {relatedArtists.data?.map((artist) => (
+              <Link
+                href={`/artist/${artist.artistId}`}
+                className="flex items-center gap-5"
+                key={artist.id}
+              >
+                <img
+                  src={artist.imageUrl || "https://via.placeholder.com/1000"}
+                  className="w-10 h-10 rounded-full"
+                  alt={`${artist.name}'s Spotify Profile`}
+                />
+                <h3 className="text-xl font-semibold">{artist.name}</h3>
+              </Link>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );

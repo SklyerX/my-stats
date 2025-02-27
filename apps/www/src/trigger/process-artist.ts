@@ -1,7 +1,7 @@
 import { SPOTIFY_BASE_API } from "@/lib/constants";
 import { chunks } from "@/lib/utils";
 import type { Artist } from "@/types/spotify";
-import { logger, task, wait } from "@trigger.dev/sdk/v3";
+import { logger, task, timeout, wait } from "@trigger.dev/sdk/v3";
 import { db } from "@workspace/database/connection";
 import pRetry, { AbortError, type Options } from "p-retry";
 import { artists as artistsTable } from "@workspace/database/schema";
@@ -31,7 +31,7 @@ async function getArtistData({
 
 export const processArtistTask = task({
   id: "process-artist",
-  maxDuration: 300,
+  maxDuration: 600,
   run: async (
     payload: {
       artists: Array<Artist>;
@@ -50,6 +50,7 @@ export const processArtistTask = task({
             minTimeout: 3000,
             maxTimeout: 8000,
             onFailedAttempt: (error) => {
+              console.log("FAILED");
               logger.error(
                 `Retry failed ${error.attemptNumber}/${error.retriesLeft}`,
               );

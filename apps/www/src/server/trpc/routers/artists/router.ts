@@ -59,7 +59,7 @@ export const artistsRouter = router({
             },
           );
 
-          await processArtistStatsTask.trigger({ artistId });
+          await processArtistStatsTask.trigger({ artistId }, { ttl: "1h" });
 
           return {
             artist,
@@ -68,6 +68,16 @@ export const artistsRouter = router({
             message: "Artist stats fetch has been initiated",
           };
         }
+
+        const isQueue = await redis.get(processCacheKey);
+
+        if (isQueue)
+          return {
+            artist,
+            stats: null,
+            status: "initiated",
+            message: "Artist stats fetch are being initiated",
+          };
 
         const cachedStats = (await redis.get(cacheKey)) as {
           topTracks: { tracks: Track[] };
@@ -94,7 +104,7 @@ export const artistsRouter = router({
           },
         );
 
-        await processArtistStatsTask.trigger({ artistId });
+        await processArtistStatsTask.trigger({ artistId }, { ttl: "1h" });
 
         return {
           artist,
@@ -157,13 +167,21 @@ export const artistsRouter = router({
         if (relatedArtistsFromDb.length > 0) {
           logger.info("artists found, returning");
 
-          await redis.set(
-            cacheKey,
-            relatedArtistsFromDb.map((rel) => rel.artists),
-            {
-              ex: CACHE_TIMES.relatedArtists,
-            },
+          const uniqueArtists = Array.from(
+            new Map(
+              relatedArtistsFromDb.map((item) => [
+                item.artists.artistId,
+                {
+                  ...item.artists,
+                  matchScore: item.related_artists.matchScore,
+                },
+              ]),
+            ).values(),
           );
+
+          await redis.set(cacheKey, uniqueArtists, {
+            ex: CACHE_TIMES.relatedArtists,
+          });
 
           return {
             status: "success",
@@ -192,13 +210,18 @@ export const artistsRouter = router({
 
         logger.info("similar artists");
 
-        await processArtistsTask.trigger({
-          lastFmArtists: similarArtists.map((artist) => ({
-            name: artist.name,
-            match: artist.match, // Use the actual match score from Last.fm
-          })),
-          sourceArtistId: artistId,
-        });
+        await processArtistsTask.trigger(
+          {
+            lastFmArtists: similarArtists.map((artist) => ({
+              name: artist.name,
+              match: artist.match, // Use the actual match score from Last.fm
+            })),
+            sourceArtistId: artistId,
+          },
+          {
+            ttl: "1h",
+          },
+        );
 
         await redis.set(
           queueKey,
@@ -241,13 +264,18 @@ export const artistsRouter = router({
 
       logger.info("Similar artists", similarArtists?.at(0));
 
-      await processArtistsTask.trigger({
-        lastFmArtists: similarArtists.map((artist) => ({
-          name: artist.name,
-          match: artist.match, // Use the actual match score from Last.fm
-        })),
-        sourceArtistId: artistId,
-      });
+      await processArtistsTask.trigger(
+        {
+          lastFmArtists: similarArtists.map((artist) => ({
+            name: artist.name,
+            match: artist.match, // Use the actual match score from Last.fm
+          })),
+          sourceArtistId: artistId,
+        },
+        {
+          ttl: "1h",
+        },
+      );
 
       await redis.set(
         queueKey,

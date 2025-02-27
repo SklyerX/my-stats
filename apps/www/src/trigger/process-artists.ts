@@ -11,6 +11,7 @@ import { relatedArtists } from "@workspace/database/schema";
 
 export const processArtistsTask = task({
   id: "process-artists",
+  maxDuration: 600,
   run: async (payload: {
     lastFmArtists: { name: string; match: string }[];
     sourceArtistId: string;
@@ -22,6 +23,8 @@ export const processArtistsTask = task({
     const spotifyApi = new SpotifyAPI(accessToken);
 
     const foundRelationships = [];
+
+    const processedArtistIds = new Set();
 
     for (const chunk of chunks(lastFmArtists, 5)) {
       for (const artist of chunk) {
@@ -35,7 +38,9 @@ export const processArtistsTask = task({
 
         const firstArtist = data.artists?.items?.[0];
 
-        if (firstArtist) {
+        if (firstArtist && !processedArtistIds.has(firstArtist.id)) {
+          processedArtistIds.add(firstArtist.id);
+
           await createSpotifyArtistEntry(firstArtist.id);
 
           foundRelationships.push({
@@ -71,10 +76,10 @@ export const processArtistsTask = task({
         },
       });
 
-    await wait.for({ seconds: 5 });
-
     const cacheKey = CACHE_KEYS.relatedArtistQueue(sourceArtistId);
 
     await redis.del(cacheKey);
+
+    await wait.for({ seconds: 5 });
   },
 });
