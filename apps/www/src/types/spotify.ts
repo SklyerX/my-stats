@@ -195,3 +195,69 @@ export interface StatsResponse {
   albums: AlbumStats[];
   genres: string[];
 }
+
+export interface ArtistAlbumsResponse {
+  href: string;
+  limit: number;
+  next: string;
+  offset: number;
+  previous: string;
+  total: number;
+  items: Album[];
+}
+
+export interface ArtistTopTracksResponse {
+  tracks: Track[];
+}
+
+interface Pagination<T> {
+  href: string;
+  limit: number;
+  next: string | null;
+  offset: number;
+  previous: string | null;
+  total: number;
+  items: T[];
+}
+
+// Complete search response type
+export interface SearchContentResponse {
+  tracks?: Pagination<Track>;
+  artists?: Pagination<SimplifiedArtist>;
+  albums?: Pagination<Album>;
+  // * Currently unused
+
+  // playlists?: Pagination<PlaylistItem>;
+  // shows?: Pagination<Show>;
+  // episodes?: Pagination<Episode>;
+  // audiobooks?: Pagination<Audiobook>;
+}
+
+export interface SearchContentParams {
+  query: string;
+  limit?: number;
+  offset?: number;
+  type?: Array<"artist" | "track" | "album">;
+  // * Currently unused
+  // | "playlist"
+  // | "episode"
+  // | "playbook"
+  // | "artist";
+  market?: string;
+  include_external?: "audio";
+}
+
+type EnsureProperties<T, K extends keyof T> = T & { [P in K]-?: T[P] };
+
+// Type function that makes certain properties required based on the search types
+export type TypedSearchResponse<T extends (keyof SearchContentResponse)[]> =
+  T extends Array<infer U>
+    ? U extends keyof SearchContentResponse
+      ? EnsureProperties<SearchContentResponse, U>
+      : SearchContentResponse
+    : SearchContentResponse;
+
+export type SearchResult<T extends SearchContentParams["type"]> =
+  T extends Array<infer U extends keyof SearchContentResponse>
+    ? TypedSearchResponse<U[]>
+    : SearchContentResponse;
