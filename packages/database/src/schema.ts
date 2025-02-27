@@ -1,7 +1,7 @@
-import { relations } from "drizzle-orm";
-import { varchar } from "drizzle-orm/pg-core";
+import { relations, type SQL, sql } from "drizzle-orm";
+import { type AnyPgColumn, unique, varchar } from "drizzle-orm/pg-core";
 import { jsonb } from "drizzle-orm/pg-core";
-import { index } from "drizzle-orm/pg-core";
+import { numeric } from "drizzle-orm/pg-core";
 import { integer } from "drizzle-orm/pg-core";
 import { serial } from "drizzle-orm/pg-core";
 import { text, timestamp, pgTable } from "drizzle-orm/pg-core";
@@ -50,6 +50,28 @@ export const artistsStats = pgTable("artists_stats", {
   lastUpdated: timestamp().notNull().defaultNow(),
 });
 
+export const relatedArtists = pgTable(
+  "related_artists",
+  {
+    id: serial("id").primaryKey(),
+    artistId: text("artist_id")
+      .notNull()
+      .references(() => artists.id),
+    relatedArtistId: text("related_artist_id")
+      .notNull()
+      .references(() => artists.id),
+    matchScore: numeric("match_score", { precision: 5, scale: 2 }).notNull(),
+    source: varchar("source", { length: 50 }).notNull().default("lastfm"),
+    updatedAt: timestamp("updated_at").defaultNow(),
+  },
+  (table) => ({
+    uniqueRelationship: unique("unique_artist_relationship").on(
+      table.artistId,
+      table.relatedArtistId,
+    ),
+  }),
+);
+
 export const tokens = pgTable("tokens", {
   id: serial("id").primaryKey(),
   userId: text("user_id")
@@ -89,3 +111,8 @@ export const tokensRelations = relations(tokens, ({ one }) => ({
 export type User = typeof users.$inferSelect;
 export type Session = typeof sessions.$inferSelect;
 export type Artists = typeof artists.$inferSelect;
+export type RelatedArtists = typeof relatedArtists.$inferSelect;
+
+export function lower(col: AnyPgColumn): SQL {
+  return sql`lower(${col})`;
+}
