@@ -37,7 +37,7 @@ export default async function ArtistsPage({ params }: Props) {
               Followers
             </p>
             <Link
-              href={`https://open.spotify.com/artist/${data.artist.id}`}
+              href={`https://open.spotify.com/artist/${data.artist.artistId}`}
               target="_blank"
               className="mt-3 block"
             >
