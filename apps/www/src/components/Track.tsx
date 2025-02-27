@@ -10,8 +10,8 @@ export interface TrackProps {
 
 export function Track({ track, index, withCrown = true }: TrackProps) {
   return (
-    <Link href={`/track/${track.id}`}>
-      <div className="aspect-square">
+    <div className="aspect-square">
+      <Link href={`/track/${track.id}`}>
         <div className="relative">
           {index === 0 && withCrown && (
             <span className="absolute text-3xl z-40 -rotate-45 -left-5 -top-5">
@@ -34,17 +34,19 @@ export function Track({ track, index, withCrown = true }: TrackProps) {
           </span>{" "}
           {track.name}
         </p>
-        <li className="mt-1 line-clamp-2">
-          {track.artists.map((artist, i) => (
+      </Link>
+      <li className="mt-1 line-clamp-2">
+        {track.artists.map((artist, i) => (
+          <Link href={`/artist/${artist.id}`} key={artist.id}>
             <div className="text-muted-foreground" key={artist.id}>
               <span className="hover:text-foreground transition-colors">
                 {artist.name}
               </span>
               {i !== track.artists.length - 1 ? "," : null}
             </div>
-          ))}
-        </li>
-      </div>
-    </Link>
+          </Link>
+        ))}
+      </li>
+    </div>
   );
 }
