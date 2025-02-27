@@ -5,14 +5,15 @@ import type { Track as TrackType } from "@/types/spotify";
 export interface TrackProps {
   track: TrackType;
   index: number;
+  withCrown?: boolean;
 }
 
-export function Track({ track, index }: TrackProps) {
+export function Track({ track, index, withCrown = true }: TrackProps) {
   return (
     <Link href={`/track/${track.id}`}>
       <div className="aspect-square">
         <div className="relative">
-          {index === 0 && (
+          {index === 0 && withCrown && (
             <span className="absolute text-3xl z-40 -rotate-45 -left-5 -top-5">
               👑
             </span>

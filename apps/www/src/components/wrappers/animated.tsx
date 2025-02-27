@@ -1,4 +1,5 @@
-// components/animations/AnimatedWrapper.tsx
+"use client";
+
 import { motion } from "framer-motion";
 import { Track, type TrackProps } from "../Track";
 import { Album, type AlbumProps } from "../Album";
