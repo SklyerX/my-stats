@@ -11,7 +11,6 @@ import type { InternalTopUserStats } from "@/types/response";
 import { z } from "zod";
 import type { RecentlyPlayedResponse } from "@/types/spotify";
 import { processArtistTask } from "@/trigger/process-artist";
-import { waitUntil } from "@vercel/functions";
 
 export const userRouter = router({
   top: publicProcedure

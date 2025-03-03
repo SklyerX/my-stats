@@ -4,6 +4,7 @@ import type {
   ArtistTopTracksResponse,
   SearchContentParams,
   SearchContentResponse,
+  Track,
 } from "@/types/spotify";
 import { SPOTIFY_BASE_API } from "../constants";
 
@@ -80,5 +81,10 @@ export class SpotifyAPI {
     });
 
     return search;
+  }
+
+  async getTrack(trackId: string) {
+    const track = await this.request<Track>(`/tracks/${trackId}`);
+    return track;
   }
 }

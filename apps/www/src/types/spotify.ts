@@ -87,6 +87,9 @@ export interface Track {
   type: "track";
   uri: string;
   is_local: boolean;
+  external_ids: {
+    isrc: string;
+  };
 }
 
 export interface Artist {

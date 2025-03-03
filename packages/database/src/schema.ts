@@ -1,6 +1,9 @@
 import { relations, type SQL, sql } from "drizzle-orm";
 import { type AnyPgColumn, unique, varchar } from "drizzle-orm/pg-core";
 import { jsonb } from "drizzle-orm/pg-core";
+import { boolean } from "drizzle-orm/pg-core";
+import { pgEnum } from "drizzle-orm/pg-core";
+import { index } from "drizzle-orm/pg-core";
 import { numeric } from "drizzle-orm/pg-core";
 import { integer } from "drizzle-orm/pg-core";
 import { serial } from "drizzle-orm/pg-core";
@@ -40,6 +43,82 @@ export const artists = pgTable("artists", {
   popularity: integer("popularity"),
   followerAmount: integer("follower_amount"),
 });
+
+export const tracks = pgTable("tracks", {
+  id: serial("id").primaryKey(),
+  trackId: text("track_id").notNull().unique(),
+  name: varchar("name", { length: 255 }).notNull(),
+  album: text("album").notNull(),
+  albumId: text("albumId").notNull(),
+  artist: text("artist").notNull(),
+  isrc: text("isrc").notNull(),
+  imageUrl: varchar("image_url"),
+  updatedAt: timestamp("updated_at").defaultNow(),
+  popularity: integer("popularity"),
+  duration: integer("duration"),
+});
+
+export const trackArtists = pgTable(
+  "track_artists",
+  {
+    id: serial("id").primaryKey(),
+    trackId: text("track_id")
+      .notNull()
+      .references(() => tracks.trackId, {
+        onDelete: "cascade",
+      }),
+    artistId: text("artist_id").notNull(),
+    artistName: varchar("artist_name", { length: 255 }).notNull(),
+    order: integer("order").notNull().default(0),
+    createdAt: timestamp("created_at").defaultNow(),
+  },
+  (table) => ({
+    idx_track_id: index().on(table.trackId),
+    idx_artist_id: index().on(table.artistId),
+    unique_track_artist: unique("unique_track_artist").on(
+      table.trackId,
+      table.artistId,
+    ),
+  }),
+);
+
+export const spotifyIdMap = pgTable("spotify_to_mbid_map", {
+  id: serial("id").primaryKey(),
+  trackId: varchar("trackId", { length: 255 }).notNull().unique(),
+  mbid: varchar("mbid", { length: 255 }),
+  isrc: varchar("isrc", { length: 255 }).notNull(),
+  status: varchar("status", { length: 20 }).default("pending"),
+  lastUpdated: timestamp("last_updated").defaultNow(),
+});
+
+export const audioFeatures = pgTable(
+  "audio_features",
+  {
+    id: serial("id").primaryKey(),
+    spotifyId: varchar("spotify_id", { length: 255 })
+      .notNull()
+      .unique()
+      .references(() => tracks.trackId, {
+        onDelete: "cascade",
+      }),
+    mbid: varchar("mid", { length: 255 }),
+    featureData: jsonb("feature_data"),
+    available: boolean("available").default(true),
+    lastUpdated: timestamp("last_updated", {
+      withTimezone: true,
+    }).defaultNow(),
+    unavailableReason: varchar("unavailable_reason", { length: 50 }),
+    lookupAttempts: integer("lookup_attempts").default(1),
+    nextLookupAttempt: timestamp("next_lookup_attempt", {
+      withTimezone: true,
+    }),
+  },
+  (table) => ({
+    idx_spotify_id: index().on(table.spotifyId),
+    idx_mid: index().on(table.mbid),
+    idx_available: index().on(table.available),
+  }),
+);
 
 export const artistsStats = pgTable("artists_stats", {
   artistId: text("artist_id")
@@ -108,10 +187,77 @@ export const tokensRelations = relations(tokens, ({ one }) => ({
   }),
 }));
 
+export const artistsRelations = relations(artists, ({ one, many }) => ({
+  stats: one(artistsStats, {
+    fields: [artists.id],
+    references: [artistsStats.artistId],
+  }),
+  relatedFrom: many(relatedArtists, { relationName: "artistRelationsFrom" }),
+  relatedTo: many(relatedArtists, { relationName: "artistRelationsTo" }),
+}));
+
+export const artistsStatsRelations = relations(artistsStats, ({ one }) => ({
+  artist: one(artists, {
+    fields: [artistsStats.artistId],
+    references: [artists.id],
+  }),
+}));
+
+export const trackArtistsRelations = relations(trackArtists, ({ one }) => ({
+  track: one(tracks, {
+    fields: [trackArtists.trackId],
+    references: [tracks.trackId],
+  }),
+  artist: one(artists, {
+    fields: [trackArtists.artistId],
+    references: [artists.artistId],
+  }),
+}));
+
+export const relatedArtistsRelations = relations(relatedArtists, ({ one }) => ({
+  artist: one(artists, {
+    fields: [relatedArtists.artistId],
+    references: [artists.id],
+    relationName: "artistRelationsFrom",
+  }),
+  relatedArtist: one(artists, {
+    fields: [relatedArtists.relatedArtistId],
+    references: [artists.id],
+    relationName: "artistRelationsTo",
+  }),
+}));
+
+export const tracksRelations = relations(tracks, ({ one }) => ({
+  audioFeatures: one(audioFeatures, {
+    fields: [tracks.trackId],
+    references: [audioFeatures.spotifyId],
+  }),
+  spotifyMap: one(spotifyIdMap, {
+    fields: [tracks.trackId],
+    references: [spotifyIdMap.trackId],
+  }),
+}));
+
+export const audioFeaturesRelations = relations(audioFeatures, ({ one }) => ({
+  track: one(tracks, {
+    fields: [audioFeatures.spotifyId],
+    references: [tracks.trackId],
+  }),
+}));
+
+export const spotifyIdMapRelations = relations(spotifyIdMap, ({ one }) => ({
+  track: one(tracks, {
+    fields: [spotifyIdMap.trackId],
+    references: [tracks.trackId],
+  }),
+}));
+
 export type User = typeof users.$inferSelect;
 export type Session = typeof sessions.$inferSelect;
 export type Artists = typeof artists.$inferSelect;
 export type RelatedArtists = typeof relatedArtists.$inferSelect;
+export type Track = typeof tracks.$inferSelect;
+export type AudioFeature = typeof audioFeatures.$inferSelect;
 
 export function lower(col: AnyPgColumn): SQL {
   return sql`lower(${col})`;

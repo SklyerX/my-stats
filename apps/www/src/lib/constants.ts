@@ -11,6 +11,9 @@ export const CACHE_KEYS = {
   systemSpotifyToken: () => "system_spotify_token",
   relatedArtist: (artistId: string) => `related-artist:${artistId}`,
   relatedArtistQueue: (artistId: string) => `related-artist-queue:${artistId}`,
+  trackAudioFeatures: (trackId: string) => `track-audio-features:${trackId}`,
+  trackAudioFeaturesQueue: (trackId: string) =>
+    `track-audio-features-queue:${trackId}`,
 };
 
 export const CACHE_TIMES = {
@@ -21,6 +24,8 @@ export const CACHE_TIMES = {
   artistStats: 604800,
   relatedArtists: 604800,
   relatedArtistsQueue: 300,
+  trackAudioFeatures: 86400,
+  trackAudioFeaturesQueue: 300,
 };
 
 export const TIME_RANGE_TEXT: Record<TIME_RANGE, string> = {
