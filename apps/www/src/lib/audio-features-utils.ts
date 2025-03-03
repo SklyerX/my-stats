@@ -14,6 +14,20 @@ export interface AudioFeatures {
     aggressive: { ratio: { aggressive: number } };
     electronic: { ratio: { electronic: number } };
   };
+  low_level: {
+    bpm: number;
+    key: {
+      key: string;
+      scale: string;
+      chordsKey: string;
+      chordsScale: string;
+    };
+    loudness: number;
+    brightness: number;
+    harmonic_tension: number;
+    tuning_frequency: number;
+    chords_change_rate: number;
+  };
 }
 
 export function calculateValence(happy: number, sad: number): number {

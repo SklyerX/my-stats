@@ -92,15 +92,18 @@ export default async function TrackPage({ params }: Props) {
           <span className="font-semibold">{data.track.name}</span>
         </p>
         {data.audio_features ? (
-          <div className="mt-6 flex flex-col lg:flex-row justify-center items-center gap-10">
-            <Statistics
-              audioFeatures={data.audio_features}
-              className="w-full"
-            />
-            <StatsCharts
-              audioFeatures={data.audio_features}
-              className="w-full lg:w-2/3 max-w-xl mx-auto mt-6 lg:mt-0"
-            />
+          <div>
+            <div className="mt-6 flex flex-col lg:flex-row justify-center items-center gap-10">
+              <Statistics
+                audioFeatures={data.audio_features}
+                className="w-full"
+              />
+
+              <StatsCharts
+                audioFeatures={data.audio_features}
+                className="w-full lg:w-2/3 max-w-xl mx-auto mt-6 lg:mt-0"
+              />
+            </div>
           </div>
         ) : (
           <p>
@@ -108,6 +111,43 @@ export default async function TrackPage({ params }: Props) {
             this track!
           </p>
         )}
+        {data.audio_features ? (
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-5 w-full max-w-md">
+            <div className="py-5 px-2 rounded-md bg-secondary/40 flex flex-col items-center justify-center">
+              <p className="text-lg font-semibold text-primary">
+                {data.audio_features.low_level.loudness.toFixed(2)}
+              </p>
+              <p className="text-muted-foreground">Loudness</p>
+            </div>
+            <div className="py-5 px-2 rounded-md bg-secondary/40 flex flex-col items-center justify-center">
+              <p className="text-lg font-semibold text-primary">
+                <span className="uppercase">
+                  {data.audio_features.low_level.key.scale.substr(0, 1)}
+                </span>
+                {data.audio_features.low_level.key.scale.substr(1, undefined)}
+              </p>
+              <p className="text-muted-foreground">Mode</p>
+            </div>
+            <div className="py-5 px-2 rounded-md bg-secondary/40 flex flex-col items-center justify-center">
+              <p className="text-lg font-semibold text-primary">
+                {data.audio_features.low_level.key.key}
+              </p>
+              <p className="text-muted-foreground">Major</p>
+            </div>
+            <div className="py-5 px-2 rounded-md bg-secondary/40 flex flex-col items-center justify-center">
+              <p className="text-lg font-semibold text-primary">
+                {data.audio_features.low_level.brightness.toFixed(2)}
+              </p>
+              <p className="text-muted-foreground">Brightness</p>
+            </div>
+            <div className="py-5 px-2 rounded-md bg-secondary/40 flex flex-col items-center justify-center">
+              <p className="text-lg font-semibold text-primary">
+                {data.audio_features.low_level.tuning_frequency.toFixed(2)}Hz
+              </p>
+              <p className="text-muted-foreground">Frequency</p>
+            </div>
+          </div>
+        ) : null}
       </div>
     </div>
   );
