@@ -25,7 +25,8 @@ export async function createSpotifyArtistEntry(artistId: string) {
       popularity: spotifyArtist.popularity,
       followerAmount: spotifyArtist.followers.total,
     })
-    .returning();
+    .returning()
+    .onConflictDoNothing();
 
   console.log("done storing");
 
