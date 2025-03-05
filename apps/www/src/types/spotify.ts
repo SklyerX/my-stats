@@ -33,6 +33,17 @@ export interface Album {
   artists: SimplifiedArtist[];
 }
 
+export interface AlbumResponse extends Album {
+  limit: string;
+  next: string | null;
+  offset: number;
+  previous: string | null;
+  total: number;
+  label: string;
+  popularity: number;
+  tracks: { items: Track[] };
+}
+
 export interface PlaylistOwner {
   external_urls: ExternalUrls;
   followers: {

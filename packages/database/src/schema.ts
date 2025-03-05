@@ -44,6 +44,32 @@ export const artists = pgTable("artists", {
   followerAmount: integer("follower_amount"),
 });
 
+export const albums = pgTable("album", {
+  id: serial("id").primaryKey(),
+  albumId: text("album_id").notNull().unique(),
+  name: text("name").notNull(),
+  releaseDate: timestamp("release_date").notNull(),
+  totalTracks: integer("total_tracks").notNull(),
+  albumCover: text("album_cover").notNull(),
+  popularity: integer("popularity").notNull(),
+  albumType: text("album_type").notNull(),
+  tracks: jsonb("album_tracks").default([]),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const albumsArtists = pgTable("albums_artists", {
+  albumId: text("album_id")
+    .notNull()
+    .references(() => albums.albumId, {
+      onDelete: "cascade",
+    }),
+  artistId: text("artist_id")
+    .notNull()
+    .references(() => artists.artistId, {
+      onDelete: "cascade",
+    }),
+});
+
 export const tracks = pgTable("tracks", {
   id: serial("id").primaryKey(),
   trackId: text("track_id").notNull().unique(),
@@ -203,6 +229,21 @@ export const artistsStatsRelations = relations(artistsStats, ({ one }) => ({
   }),
 }));
 
+export const albumsRelations = relations(albums, ({ many }) => ({
+  albumsArtists: many(albumsArtists),
+}));
+
+export const albumsArtistsRElations = relations(albumsArtists, ({ one }) => ({
+  album: one(albums, {
+    fields: [albumsArtists.albumId],
+    references: [albums.albumId],
+  }),
+  artist: one(artists, {
+    fields: [albumsArtists.artistId],
+    references: [artists.artistId],
+  }),
+}));
+
 export const trackArtistsRelations = relations(trackArtists, ({ one }) => ({
   track: one(tracks, {
     fields: [trackArtists.trackId],
@@ -258,6 +299,8 @@ export type Artists = typeof artists.$inferSelect;
 export type RelatedArtists = typeof relatedArtists.$inferSelect;
 export type Track = typeof tracks.$inferSelect;
 export type AudioFeature = typeof audioFeatures.$inferSelect;
+export type Albums = typeof albums.$inferSelect;
+export type AlbumArtists = typeof albumsArtists.$inferSelect;
 
 export function lower(col: AnyPgColumn): SQL {
   return sql`lower(${col})`;

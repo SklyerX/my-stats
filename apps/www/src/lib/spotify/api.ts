@@ -1,4 +1,5 @@
 import type {
+  AlbumResponse,
   Artist,
   ArtistAlbumsResponse,
   ArtistTopTracksResponse,
@@ -58,9 +59,15 @@ export class SpotifyAPI {
   }
 
   async getArtist(artistId: string) {
-    console.log("Currently in API", artistId);
     const artist = await this.request<Artist>(`/artists/${artistId}`);
     return artist;
+  }
+
+  async getMultipleArtists(artistIds: string[]) {
+    const data = await this.request<{ artists: Artist[] }>(
+      `/artists?ids=${artistIds.join(",")}`,
+    );
+    return data.artists;
   }
 
   async searchArtist({
@@ -86,5 +93,10 @@ export class SpotifyAPI {
   async getTrack(trackId: string) {
     const track = await this.request<Track>(`/tracks/${trackId}`);
     return track;
+  }
+
+  async getAlbum(albumId: string) {
+    const album = await this.request<AlbumResponse>(`/albums/${albumId}`);
+    return album;
   }
 }
