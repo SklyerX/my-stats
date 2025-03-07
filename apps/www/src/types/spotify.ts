@@ -234,6 +234,13 @@ interface Pagination<T> {
   items: T[];
 }
 
+interface SavedTrack {
+  added_at: string;
+  track: Track;
+}
+
+export type SavedTracksResponse = Pagination<SavedTrack>;
+
 // Complete search response type
 export interface SearchContentResponse {
   tracks?: Pagination<Track>;

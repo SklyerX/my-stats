@@ -1,21 +1,23 @@
 import type {
-  AlbumStats,
-  Artist,
   PlaylistTracksResponse,
   RecentlyPlayedResponse,
+  SavedTracksResponse,
   SimplifiedPlaylist,
   StatsResponse,
   TIME_RANGE,
   TopArtistsResponse,
   TopTracksResponse,
-  Track,
   UserPlaylistsResponse,
 } from "@/types/spotify";
 import { SPOTIFY_BASE_API } from "../constants";
 import { calculateTopGenres } from "./calculations";
+import { AlbumRankingSystem } from "./album-ranking-system";
 
 export class TopStatsAnalyzer {
-  constructor(private token: string) {}
+  constructor(
+    private token: string,
+    private spotifyUserId: string,
+  ) {}
 
   private async makeRequest<T>(endpoint: string) {
     const request = new Request(`${SPOTIFY_BASE_API}${endpoint}`);
@@ -35,78 +37,66 @@ export class TopStatsAnalyzer {
     limit = 50,
     offset = 0,
   ): Promise<StatsResponse> {
-    const [topTracks, topArtists, recentTracks, playlists] = await Promise.all([
-      this.makeRequest<TopTracksResponse>(
-        `/me/top/tracks?time_range=${time_range}&limit=${limit}&offset=${offset}`,
-      ),
-      this.makeRequest<TopArtistsResponse>(
-        `/me/top/artists?time_range=${time_range}&limit=${limit}&offset=${offset}`,
-      ),
-      this.makeRequest<RecentlyPlayedResponse>(
-        "/me/player/recently-played?limit=50",
-      ),
-      this.makeRequest<UserPlaylistsResponse>("/me/playlists?limit=50"),
-    ]);
-
-    const albumMap = new Map<string, AlbumStats>();
-
-    for (const track of topTracks.items) {
-      if (!albumMap.has(track.album.id)) {
-        albumMap.set(track.album.id, {
-          ...track.album,
-          artists: track.artists,
-          occurrences: 1,
-        });
-      } else {
-        const album = albumMap.get(track.album.id) as AlbumStats;
-        album.occurrences += 1;
-      }
-    }
-
-    for (const item of recentTracks.items) {
-      if (!albumMap.has(item.track.album.id)) {
-        albumMap.set(item.track.album.id, {
-          ...item.track.album,
-          artists: item.track.artists,
-          occurrences: 1,
-        });
-      } else {
-        const albumStats = albumMap.get(item.track.album.id)!;
-        albumStats.occurrences += 1;
-      }
-    }
-
-    const playlistTracks = await Promise.all(
-      playlists.items
-        .slice(0, 5)
-        .map((playlist: SimplifiedPlaylist) =>
-          this.makeRequest<PlaylistTracksResponse>(
-            `/playlists/${playlist.id}/tracks?limit=50`,
-          ),
+    const [topTracks, topArtists, recentTracks, playlists, savedTracks] =
+      await Promise.all([
+        this.makeRequest<TopTracksResponse>(
+          `/me/top/tracks?time_range=${time_range}&limit=${limit}&offset=${offset}`,
         ),
+        this.makeRequest<TopArtistsResponse>(
+          `/me/top/artists?time_range=${time_range}&limit=${limit}&offset=${offset}`,
+        ),
+        this.makeRequest<RecentlyPlayedResponse>(
+          "/me/player/recently-played?limit=50",
+        ),
+        this.makeRequest<UserPlaylistsResponse>("/me/playlists?limit=50"),
+        this.makeRequest<SavedTracksResponse>("/me/tracks?limit=50"),
+      ]);
+
+    const prioritizePlaylists = playlists.items
+      .sort((a, b) => {
+        const scoreA =
+          (a.owner.id === this.spotifyUserId ? 50 : 0) +
+          (a.tracks.total || 0) * 0.1 +
+          (a.collaborative ? -10 : 0);
+        const scoreB =
+          (b.owner.id === this.spotifyUserId ? 50 : 0) +
+          (b.tracks.total || 0) * 0.1 +
+          (b.collaborative ? -10 : 0);
+
+        return scoreB - scoreA;
+      })
+      .slice(0, 5);
+
+    const playlistTracksResponses = await Promise.all(
+      prioritizePlaylists.map((playlist: SimplifiedPlaylist) =>
+        this.makeRequest<PlaylistTracksResponse>(
+          `/playlists/${playlist.id}/tracks?limit=50`,
+        ),
+      ),
     );
 
-    for (const data of playlistTracks) {
-      for (const { track } of data.items) {
-        if (!albumMap.has(track.album.id)) {
-          albumMap.set(track.album.id, {
-            ...track.album,
-            artists: track.artists,
-            occurrences: 1,
-          });
-        } else {
-          const albumStats = albumMap.get(track.album.id)!;
-          albumStats.occurrences += 1;
-        }
-      }
-    }
+    const playlistTracks = playlistTracksResponses.flatMap(
+      (response) => response.items,
+    );
+
+    const rankingSystem = new AlbumRankingSystem();
+
+    const topAlbums = await rankingSystem.getTopAlbums({
+      topTracks: topTracks.items.map((track, i) => ({
+        position: i + 1,
+        ...track,
+      })),
+      playlists: playlistTracks,
+      recentlyPlayed: recentTracks.items.map((x) => ({
+        track: x.track,
+        played_at: x.played_at,
+        context: x.context,
+      })),
+      savedTracks: savedTracks.items.map((savedTrack) => savedTrack.track),
+    });
 
     const genreCounts = this.calculateTopGenres(
       topArtists.items.flatMap((artist) => artist.genres),
-    );
-
-    const sortedAlbums = Array.from(albumMap.values()).sort(
-      (a, b) => b.occurrences - a.occurrences,
     );
 
     const cleanedTracks = this.cleanJsonData(topTracks, [
@@ -115,9 +105,10 @@ export class TopStatsAnalyzer {
       "preview_url",
     ]);
 
-    const cleanedAlbums = this.cleanJsonData(sortedAlbums, [
+    const cleanedAlbums = this.cleanJsonData(topAlbums, [
       "available_markets",
       "external_urls",
+      "preview_url",
     ]);
 
     return {

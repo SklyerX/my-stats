@@ -97,7 +97,10 @@ export const userRouter = router({
         console.log(`[${requestId}] 📊 Analyzing stats...`);
         const analysisStart = Date.now();
 
-        const analyzer = new TopStatsAnalyzer(accessToken);
+        const analyzer = new TopStatsAnalyzer(
+          accessToken,
+          existingUser.spotifyId,
+        );
         const stats = await analyzer.getStatistics(
           time_range,
           limit ?? 50,

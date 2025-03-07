@@ -19,3 +19,20 @@ export function formatFollowerCount(count: number): string {
 
   return f.format(count);
 }
+
+export function timeDifference(timestamp: Date) {
+  const currentTime = new Date();
+  const timeDifferenceInMillis = currentTime.getTime() - timestamp.getTime();
+
+  const seconds = Math.floor(timeDifferenceInMillis / 1000);
+  const minutes = Math.floor(seconds / 60);
+  const hours = Math.floor(minutes / 60);
+  const days = Math.floor(hours / 24);
+
+  return {
+    days: days,
+    hours: hours % 24,
+    minutes: minutes % 60,
+    seconds: seconds % 60,
+  };
+}
