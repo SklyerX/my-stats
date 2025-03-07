@@ -119,7 +119,7 @@ export class AlbumRankingSystem {
       if (albumData) {
         albumData.occurrences += 1;
         albumData.savedTracks += 1;
-        albumData.score += albumData.score * this.SAVED_TRACK_MULTIPLIER;
+        albumData.score += 1 * this.SAVED_TRACK_MULTIPLIER;
       } else {
         albums.set(
           album.id,
