@@ -191,6 +191,26 @@ export const tokens = pgTable("tokens", {
   expiresAt: timestamp("expires_at", { mode: "date" }).notNull(),
 });
 
+export const uploadStatusEnum = pgEnum("upload_status", [
+  "queued",
+  "processing",
+  "completed",
+]);
+
+export const userExports = pgTable("user_exports", {
+  exportId: text("export_id")
+    .primaryKey()
+    .$defaultFn(() => nanoid()),
+  userId: text("user_id")
+    .notNull()
+    .references(() => users.id),
+  uploadDate: timestamp("upload_date", {
+    mode: "date",
+  }).defaultNow(),
+  fileName: text("file_name").notNull(),
+  status: uploadStatusEnum().default("queued"),
+});
+
 export const userRelations = relations(users, ({ one, many }) => ({
   sessions: many(sessions),
   tokens: one(tokens, {

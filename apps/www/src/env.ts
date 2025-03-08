@@ -11,6 +11,9 @@ export const env = createEnv({
     UPSTASH_REDIS_REST_TOKEN: z.string(),
     TRIGGER_SECRET_KEY: z.string(),
     LAST_FM_API_KEY: z.string(),
+    AWS_REGION: z.string(),
+    AWS_ACCESS_KEY_ID: z.string(),
+    AWS_SECRET_ACCESS_KEY: z.string(),
   },
   client: {},
   runtimeEnv: {
@@ -22,5 +25,8 @@ export const env = createEnv({
     UPSTASH_REDIS_REST_TOKEN: process.env.UPSTASH_REDIS_REST_TOKEN,
     TRIGGER_SECRET_KEY: process.env.TRIGGER_SECRET_KEY,
     LAST_FM_API_KEY: process.env.LAST_FM_API_KEY,
+    AWS_REGION: process.env.AWS_REGION,
+    AWS_ACCESS_KEY_ID: process.env.AWS_ACCESS_KEY_ID,
+    AWS_SECRET_ACCESS_KEY: process.env.AWS_SECRET_ACCESS_KEY,
   },
 });
