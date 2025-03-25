@@ -15,6 +15,8 @@ export const env = createEnv({
     AWS_SECRET_KEY: z.string(),
     AWS_REGION: z.string(),
     AWS_BUCKET_NAME: z.string(),
+    APP_AUTH_KEY: z.string(),
+    WORKER_URL: z.string().url(),
   },
   client: {},
   runtimeEnv: {
@@ -30,5 +32,7 @@ export const env = createEnv({
     AWS_SECRET_KEY: process.env.AWS_SECRET_KEY,
     AWS_REGION: process.env.AWS_REGION,
     AWS_BUCKET_NAME: process.env.AWS_BUCKET_NAME,
+    APP_AUTH_KEY: process.env.APP_AUTH_KEY,
+    WORKER_URL: process.env.WORKER_URL,
   },
 });

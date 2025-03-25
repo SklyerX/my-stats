@@ -85,6 +85,24 @@ export async function POST(req: Request) {
 
     console.log("Sending back");
 
+    const url =
+      process.env.NODE_ENV === "development"
+        ? "http://localhost:8080"
+        : env.WORKER_URL;
+
+    const request = new Request(`${url}/process`, {
+      body: JSON.stringify({
+        s3_key: s3Key,
+        process_id: id,
+        user_id: user.id,
+      }),
+    });
+
+    request.headers.set("Content-Type", "application/json");
+    request.headers.set("x-api-key", env.APP_AUTH_KEY);
+
+    await fetch(request);
+
     return new Response(
       JSON.stringify({
         message: "Upload successful awaiting processing",
