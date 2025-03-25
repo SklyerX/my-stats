@@ -3,6 +3,7 @@ import { type AnyPgColumn, unique, varchar } from "drizzle-orm/pg-core";
 import { jsonb } from "drizzle-orm/pg-core";
 import { boolean } from "drizzle-orm/pg-core";
 import { pgEnum } from "drizzle-orm/pg-core";
+import { bigint } from "drizzle-orm/pg-core";
 import { index } from "drizzle-orm/pg-core";
 import { numeric } from "drizzle-orm/pg-core";
 import { integer } from "drizzle-orm/pg-core";
@@ -211,6 +212,57 @@ export const userExports = pgTable("user_exports", {
   status: uploadStatusEnum().default("queued"),
 });
 
+export const userListeningHistory = pgTable("user_listening_history", {
+  id: serial("id").primaryKey(),
+  userId: text("user_id")
+    .notNull()
+    .references(() => users.id),
+  totalMs: bigint("total_ms", { mode: "number" }).notNull().default(0),
+  timeMessage: varchar("time_message", { length: 255 }).notNull(),
+  uniqueArtists: integer("unique_artists").notNull(),
+  uniqueTracks: integer("unique_tracks").notNull(),
+  listeningHours: integer("listening_hours").notNull(),
+  listeningMinutes: integer("listening_minutes").notNull(),
+  peakHour: integer("peak_hour").notNull(),
+  totalTracks: integer("total_tracks").notNull(),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export const userTopArtists = pgTable("user_top_artists", {
+  id: serial("id").primaryKey(),
+  userId: text("user_id")
+    .notNull()
+    .references(() => users.id),
+  historyId: integer("history_id")
+    .notNull()
+    .references(() => userListeningHistory.id, {
+      onDelete: "cascade",
+    }),
+  artistName: text("artist_name").notNull(),
+  artistId: text("artist_id").notNull(),
+  rank: integer("rank").notNull(), // #1, #2, etc
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export const userTopTracks = pgTable("user_top_tracks", {
+  id: serial("id").primaryKey(),
+  userId: text("user_id")
+    .notNull()
+    .references(() => users.id),
+  historyId: integer("history_id")
+    .notNull()
+    .references(() => userListeningHistory.id, {
+      onDelete: "cascade",
+    }),
+  trackName: text("track_name").notNull(),
+  trackId: text("track_id")
+    .notNull()
+    .references(() => tracks.trackId),
+  artistName: text("artist_name").notNull(),
+  rank: integer("rank").notNull(),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
 export const userRelations = relations(users, ({ one, many }) => ({
   sessions: many(sessions),
   tokens: one(tokens, {
@@ -313,6 +365,32 @@ export const spotifyIdMapRelations = relations(spotifyIdMap, ({ one }) => ({
   }),
 }));
 
+export const userListeningHistoryRelations = relations(
+  userListeningHistory,
+  ({ one, many }) => ({
+    user: one(users, {
+      fields: [userListeningHistory.userId],
+      references: [users.id],
+    }),
+    topArtists: many(userTopArtists),
+    topTracks: many(userTopTracks),
+  }),
+);
+
+export const userTopArtistsRelations = relations(userTopArtists, ({ one }) => ({
+  history: one(userListeningHistory, {
+    fields: [userTopArtists.historyId],
+    references: [userListeningHistory.id],
+  }),
+}));
+
+export const userTopTracksRelations = relations(userTopTracks, ({ one }) => ({
+  history: one(userListeningHistory, {
+    fields: [userTopTracks.historyId],
+    references: [userListeningHistory.id],
+  }),
+}));
+
 export type User = typeof users.$inferSelect;
 export type Session = typeof sessions.$inferSelect;
 export type Artists = typeof artists.$inferSelect;
@@ -321,6 +399,9 @@ export type Track = typeof tracks.$inferSelect;
 export type AudioFeature = typeof audioFeatures.$inferSelect;
 export type Albums = typeof albums.$inferSelect;
 export type AlbumArtists = typeof albumsArtists.$inferSelect;
+export type UserListeningHistory = typeof userListeningHistory.$inferSelect;
+export type UserTopArtist = typeof userTopArtists.$inferSelect;
+export type UserTopTrack = typeof userTopTracks.$inferSelect;
 
 export function lower(col: AnyPgColumn): SQL {
   return sql`lower(${col})`;
