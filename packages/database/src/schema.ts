@@ -246,7 +246,7 @@ export const userTopArtists = pgTable("user_top_artists", {
 
 export const userTopTracks = pgTable("user_top_tracks", {
   id: serial("id").primaryKey(),
-  userId: text("user_id")
+  userId: integer("user_id")
     .notNull()
     .references(() => users.id),
   historyId: integer("history_id")
