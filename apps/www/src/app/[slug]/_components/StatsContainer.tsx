@@ -73,7 +73,7 @@ export default function StatsContainer({
   }, [data?.stats]);
 
   return (
-    <div className="space-y-8 mt-10 p-5">
+    <div className="space-y-8 mt-10 p-5 w-full">
       <TimeRangeSelector
         isLoading={isLoading}
         onTimeRangeChange={handleTimeRangeChange}

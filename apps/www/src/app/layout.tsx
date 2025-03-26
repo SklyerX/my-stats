@@ -26,9 +26,13 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body
-        className={`${geistSans.variable} ${geistMono.variable} font-sans antialiased container mx-auto max-w-5xl mt-20 pb-10`}
+        className={`${geistSans.variable} ${geistMono.variable} font-sans antialiased`}
       >
-        <Providers>{children}</Providers>
+        <Providers>
+          <main className="container mx-auto max-w-5xl mt-20 pb-10">
+            {children}
+          </main>
+        </Providers>
       </body>
     </html>
   );

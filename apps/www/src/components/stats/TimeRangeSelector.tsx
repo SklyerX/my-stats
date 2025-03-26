@@ -1,4 +1,3 @@
-// components/stats/TimeRangeSelector.tsx
 import type { TIME_RANGE } from "@/types/spotify";
 import { TIME_RANGE_TEXT } from "@/lib/constants";
 import {
@@ -21,7 +20,7 @@ export function TimeRangeSelector({
   isLoading,
 }: TimeRangeSelectorProps) {
   return (
-    <div className="flex justify-end">
+    <div className="flex justify-end relative z-10">
       <Select
         onValueChange={onTimeRangeChange}
         value={timeRange}
