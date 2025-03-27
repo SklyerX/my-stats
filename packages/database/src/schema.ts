@@ -140,11 +140,11 @@ export const audioFeatures = pgTable(
       withTimezone: true,
     }),
   },
-  (table) => ({
-    idx_spotify_id: index().on(table.spotifyId),
-    idx_mid: index().on(table.mbid),
-    idx_available: index().on(table.available),
-  }),
+  (table) => [
+    index().on(table.spotifyId),
+    index().on(table.mbid),
+    index().on(table.available),
+  ],
 );
 
 export const artistsStats = pgTable("artists_stats", {
@@ -170,12 +170,12 @@ export const relatedArtists = pgTable(
     source: varchar("source", { length: 50 }).notNull().default("lastfm"),
     updatedAt: timestamp("updated_at").defaultNow(),
   },
-  (table) => ({
-    uniqueRelationship: unique("unique_artist_relationship").on(
+  (table) => [
+    unique("unique_artist_relationship").on(
       table.artistId,
       table.relatedArtistId,
     ),
-  }),
+  ],
 );
 
 export const tokens = pgTable("tokens", {
