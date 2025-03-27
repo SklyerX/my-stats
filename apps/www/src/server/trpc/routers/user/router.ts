@@ -81,6 +81,7 @@ export const userRouter = router({
               image: existingUser.image,
               name: existingUser.username,
               bio: existingUser.bio,
+              id: existingUser.id,
             },
           } as InternalTopUserStats;
         }
@@ -145,6 +146,7 @@ export const userRouter = router({
             image: existingUser.image,
             name: existingUser.username,
             bio: existingUser.bio,
+            id: existingUser.id,
           },
         } as InternalTopUserStats;
       } catch (err) {

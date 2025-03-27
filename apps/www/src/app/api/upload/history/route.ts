@@ -91,6 +91,7 @@ export async function POST(req: Request) {
         : env.WORKER_URL;
 
     const request = new Request(`${url}/process`, {
+      method: "POST",
       body: JSON.stringify({
         s3_key: s3Key,
         process_id: id,

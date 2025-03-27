@@ -5,6 +5,7 @@ export interface InternalTopUserStats {
     image: string;
     name: string;
     bio: string;
+    id: string;
   };
   stats: StatsResponse;
 }

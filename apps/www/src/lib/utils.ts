@@ -36,3 +36,11 @@ export function timeDifference(timestamp: Date) {
     seconds: seconds % 60,
   };
 }
+
+export function convertTo12Hour(hour: number) {
+  const period = hour >= 12 ? "PM" : "AM";
+
+  const hour12 = hour % 12 || 12;
+
+  return `${hour12} ${period}`;
+}

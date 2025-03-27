@@ -12,6 +12,8 @@ import { TopTracks } from "@/components/stats/TopTracks";
 import { TopArtists } from "@/components/stats/TopArtists";
 import { RecentlyPlayed } from "@/components/stats/RecentlyPlayed";
 import { TimeRangeSelector } from "@/components/stats/TimeRangeSelector";
+import type { UserListeningHistory } from "@workspace/database/schema";
+import { convertTo12Hour } from "@/lib/utils";
 
 interface Props {
   initialStats: Awaited<
@@ -21,12 +23,18 @@ interface Props {
     ReturnType<(typeof serverClient)["user"]["recentlyPlayed"]>
   >;
   displayName: string;
+  listeningHistory?: UserListeningHistory;
 }
+
+const f = new Intl.NumberFormat("en-US", {
+  notation: "standard",
+});
 
 export default function StatsContainer({
   initialStats,
   recentlyPlayed,
   displayName,
+  listeningHistory,
 }: Props) {
   const [timeRange, setTimeRange] = useQueryState(
     "time_range",
@@ -74,11 +82,66 @@ export default function StatsContainer({
 
   return (
     <div className="space-y-8 mt-10 p-5 w-full">
-      <TimeRangeSelector
-        isLoading={isLoading}
-        onTimeRangeChange={handleTimeRangeChange}
-        timeRange={timeRange}
-      />
+      <div className="flex justify-between relative z-10">
+        {listeningHistory && (
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-0 sm:gap-5">
+            <div className="flex flex-col mt-10">
+              <p className="font-medium text-xl">
+                {f.format(listeningHistory.totalTracks)}
+              </p>
+              <span className="text-muted-foreground font-medium text-xl">
+                Streams
+              </span>
+            </div>
+            <div className="flex flex-col mt-10">
+              <p className="font-medium text-xl">
+                {f.format(listeningHistory.listeningHours)}
+              </p>
+              <span className="text-muted-foreground font-medium text-xl">
+                Hours Streamed
+              </span>
+            </div>
+            <div className="flex flex-col mt-10">
+              <p className="font-medium text-xl">
+                {f.format(Math.round(listeningHistory.listeningHours * 60))}
+              </p>
+              <span className="text-muted-foreground font-medium text-xl">
+                Minutes Streamed
+              </span>
+            </div>
+            <div className="flex flex-col mt-10">
+              <p className="font-medium text-xl">
+                {f.format(listeningHistory.uniqueTracks)}
+              </p>
+              <span className="text-muted-foreground font-medium text-xl">
+                Unique Tracks
+              </span>
+            </div>
+            <div className="flex flex-col mt-10">
+              <p className="font-medium text-xl">
+                {f.format(listeningHistory.uniqueArtists)}
+              </p>
+              <span className="text-muted-foreground font-medium text-xl">
+                Unique Artists
+              </span>
+            </div>
+            <div className="flex flex-col mt-10">
+              <p className="font-medium text-xl">
+                {convertTo12Hour(listeningHistory.peakHour)}
+              </p>
+              <span className="text-muted-foreground font-medium text-xl">
+                Peak Hour
+              </span>
+            </div>
+          </div>
+        )}
+
+        <TimeRangeSelector
+          isLoading={isLoading}
+          onTimeRangeChange={handleTimeRangeChange}
+          timeRange={timeRange}
+        />
+      </div>
 
       <TopGenres
         genres={stats.genres}

@@ -1,6 +1,7 @@
 import UserProfile from "./_components/UserProfile";
 import StatsContainer from "./_components/StatsContainer";
 import { serverClient } from "@/server/trpc/server-client";
+import { db } from "@workspace/database/connection";
 
 interface Props {
   params: {
@@ -25,6 +26,16 @@ export default async function UserPage({ params, searchParams }: Props) {
     }),
   ]);
 
+  const listeningHistory = await db.query.userListeningHistory.findFirst({
+    where: (fields, { eq }) => eq(fields.userId, data.user.id),
+  });
+
+  console.log({
+    data,
+    recentlyPlayed,
+    listeningHistory,
+  });
+
   return (
     <div>
       <UserProfile user={data.user} />
@@ -32,6 +43,7 @@ export default async function UserPage({ params, searchParams }: Props) {
         initialStats={data.stats}
         recentlyPlayed={recentlyPlayed}
         displayName={data.user.name}
+        listeningHistory={listeningHistory}
       />
     </div>
   );

@@ -20,7 +20,7 @@ export function TimeRangeSelector({
   isLoading,
 }: TimeRangeSelectorProps) {
   return (
-    <div className="flex justify-end relative z-10">
+    <div className="relative z-10 justify-end">
       <Select
         onValueChange={onTimeRangeChange}
         value={timeRange}
