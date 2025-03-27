@@ -3,6 +3,7 @@ import type {
   Artist,
   ArtistAlbumsResponse,
   ArtistTopTracksResponse,
+  PlaybackResponse,
   SearchContentParams,
   SearchContentResponse,
   Track,
@@ -98,5 +99,10 @@ export class SpotifyAPI {
   async getAlbum(albumId: string) {
     const album = await this.request<AlbumResponse>(`/albums/${albumId}`);
     return album;
+  }
+
+  async getPlayback() {
+    const playbackState = await this.request<PlaybackResponse>("/me/player");
+    return playbackState;
   }
 }

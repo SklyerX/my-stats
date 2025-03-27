@@ -2,6 +2,7 @@ import UserProfile from "./_components/UserProfile";
 import StatsContainer from "./_components/StatsContainer";
 import { serverClient } from "@/server/trpc/server-client";
 import { db } from "@workspace/database/connection";
+import Playback from "@/components/Playback";
 
 interface Props {
   params: {
@@ -42,7 +43,7 @@ export default async function UserPage({ params, searchParams }: Props) {
       <StatsContainer
         initialStats={data.stats}
         recentlyPlayed={recentlyPlayed}
-        displayName={data.user.name}
+        user={data.user}
         listeningHistory={listeningHistory}
       />
     </div>

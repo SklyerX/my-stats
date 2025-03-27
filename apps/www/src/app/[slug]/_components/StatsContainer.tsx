@@ -14,6 +14,7 @@ import { RecentlyPlayed } from "@/components/stats/RecentlyPlayed";
 import { TimeRangeSelector } from "@/components/stats/TimeRangeSelector";
 import type { UserListeningHistory } from "@workspace/database/schema";
 import { convertTo12Hour } from "@/lib/utils";
+import Playback from "@/components/Playback";
 
 interface Props {
   initialStats: Awaited<
@@ -22,7 +23,10 @@ interface Props {
   recentlyPlayed: Awaited<
     ReturnType<(typeof serverClient)["user"]["recentlyPlayed"]>
   >;
-  displayName: string;
+  user: Pick<
+    Awaited<ReturnType<(typeof serverClient)["user"]["top"]>>["user"],
+    "id" | "name"
+  >;
   listeningHistory?: UserListeningHistory;
 }
 
@@ -33,7 +37,7 @@ const f = new Intl.NumberFormat("en-US", {
 export default function StatsContainer({
   initialStats,
   recentlyPlayed,
-  displayName,
+  user,
   listeningHistory,
 }: Props) {
   const [timeRange, setTimeRange] = useQueryState(
@@ -86,7 +90,7 @@ export default function StatsContainer({
         {listeningHistory && (
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-0 sm:gap-5">
             <div className="flex flex-col mt-10">
-              <p className="font-medium text-xl">
+              <p className="font-semibold text-xl">
                 {f.format(listeningHistory.totalTracks)}
               </p>
               <span className="text-muted-foreground font-medium text-xl">
@@ -94,7 +98,7 @@ export default function StatsContainer({
               </span>
             </div>
             <div className="flex flex-col mt-10">
-              <p className="font-medium text-xl">
+              <p className="font-semibold text-xl">
                 {f.format(listeningHistory.listeningHours)}
               </p>
               <span className="text-muted-foreground font-medium text-xl">
@@ -102,7 +106,7 @@ export default function StatsContainer({
               </span>
             </div>
             <div className="flex flex-col mt-10">
-              <p className="font-medium text-xl">
+              <p className="font-semibold text-xl">
                 {f.format(Math.round(listeningHistory.listeningHours * 60))}
               </p>
               <span className="text-muted-foreground font-medium text-xl">
@@ -110,7 +114,7 @@ export default function StatsContainer({
               </span>
             </div>
             <div className="flex flex-col mt-10">
-              <p className="font-medium text-xl">
+              <p className="font-semibold text-xl">
                 {f.format(listeningHistory.uniqueTracks)}
               </p>
               <span className="text-muted-foreground font-medium text-xl">
@@ -118,7 +122,7 @@ export default function StatsContainer({
               </span>
             </div>
             <div className="flex flex-col mt-10">
-              <p className="font-medium text-xl">
+              <p className="font-semibold text-xl">
                 {f.format(listeningHistory.uniqueArtists)}
               </p>
               <span className="text-muted-foreground font-medium text-xl">
@@ -126,7 +130,7 @@ export default function StatsContainer({
               </span>
             </div>
             <div className="flex flex-col mt-10">
-              <p className="font-medium text-xl">
+              <p className="font-semibold text-xl">
                 {convertTo12Hour(listeningHistory.peakHour)}
               </p>
               <span className="text-muted-foreground font-medium text-xl">
@@ -143,16 +147,18 @@ export default function StatsContainer({
         />
       </div>
 
+      <Playback userId={user.id} />
+
       <TopGenres
         genres={stats.genres}
-        displayName={displayName}
+        displayName={user.name}
         isLoading={isLoading}
         timeRange={timeRange}
       />
 
       <TopAlbums
         albums={stats.albums}
-        displayName={displayName}
+        displayName={user.name}
         expanded={expanded.albums}
         isLoading={isLoading}
         timeRange={timeRange}
@@ -161,7 +167,7 @@ export default function StatsContainer({
 
       <TopTracks
         tracks={stats.tracks}
-        displayName={displayName}
+        displayName={user.name}
         expanded={expanded.tracks}
         isLoading={isLoading}
         timeRange={timeRange}
@@ -170,17 +176,14 @@ export default function StatsContainer({
 
       <TopArtists
         artists={stats.artists}
-        displayName={displayName}
+        displayName={user.name}
         expanded={expanded.artists}
         isLoading={isLoading}
         timeRange={timeRange}
         updateExpanded={(expanded) => updateExpanded("artists", expanded)}
       />
 
-      <RecentlyPlayed
-        displayName={displayName}
-        recentlyPlayed={recentlyPlayed}
-      />
+      <RecentlyPlayed displayName={user.name} recentlyPlayed={recentlyPlayed} />
     </div>
   );
 }

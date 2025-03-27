@@ -15,6 +15,7 @@ export const CACHE_KEYS = {
   trackAudioFeaturesQueue: (trackId: string) =>
     `track-audio-features-queue:${trackId}`,
   albumData: (albumId: string) => `album:${albumId}`,
+  playback: (userId: string) => `playback:${userId}`,
 };
 
 export const CACHE_TIMES = {

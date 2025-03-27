@@ -44,6 +44,32 @@ export interface AlbumResponse extends Album {
   tracks: { items: Track[] };
 }
 
+export interface PlaybackResponse {
+  device: {
+    id: string | null;
+    is_active: boolean;
+    is_private_session: boolean;
+    is_restricted: boolean;
+    name: string;
+    type: string;
+    volume_percent: number;
+    supports_volume: boolean | null;
+  };
+  repeat_state: string;
+  shuffle_state: boolean;
+  context: {
+    type: string;
+    href: string;
+    external_urls: ExternalUrls;
+    uri: string;
+  } | null;
+  timestamp: number;
+  progress_ms: number;
+  is_playing: boolean;
+  item: Track | null;
+  currently_playing_type: "track" | "episode" | "ad" | "unknown";
+}
+
 export interface PlaylistOwner {
   external_urls: ExternalUrls;
   followers: {

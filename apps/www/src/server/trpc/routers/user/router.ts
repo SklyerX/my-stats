@@ -9,8 +9,9 @@ import { TRPCError } from "@trpc/server";
 import { headers } from "next/headers";
 import type { InternalTopUserStats } from "@/types/response";
 import { z } from "zod";
-import type { RecentlyPlayedResponse } from "@/types/spotify";
+import type { PlaybackResponse, RecentlyPlayedResponse } from "@/types/spotify";
 import { processArtistTask } from "@/trigger/process-artist";
+import { SpotifyAPI } from "@/lib/spotify/api";
 
 export const userRouter = router({
   top: publicProcedure
@@ -221,5 +222,58 @@ export const userRouter = router({
       });
 
       return orderedItems;
+    }),
+  getPlayback: publicProcedure
+    .input(z.object({ userId: z.string() }))
+    .query(async ({ input }) => {
+      const { userId } = input;
+      const cacheKey = CACHE_KEYS.playback(userId);
+
+      const cached = (await redis.get(cacheKey)) as Omit<
+        PlaybackResponse,
+        "device"
+      > & { cachedAt: number };
+
+      if (cached) {
+        const updatedProgress =
+          cached.progress_ms + (Date.now() - cached.cachedAt);
+
+        return { ...cached, progress_ms: updatedProgress };
+      }
+
+      const existingUser = await db.query.users.findFirst({
+        where: (fields, { eq }) => eq(fields.id, userId),
+      });
+
+      if (!existingUser)
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "User not found",
+        });
+
+      const accessToken = await getValidSpotifyToken(existingUser.id);
+
+      const spotifyApi = new SpotifyAPI(accessToken);
+
+      const data = await spotifyApi.getPlayback();
+
+      const { device, ...rest } = data;
+
+      if (device.is_private_session) return null;
+
+      const expirationSeconds = Math.max(
+        1,
+        Math.floor(((rest.item?.duration_ms || 0) - rest.progress_ms) / 1000),
+      );
+
+      await redis.set(
+        cacheKey,
+        { ...rest, cachedAt: Date.now() },
+        {
+          ex: expirationSeconds,
+        },
+      );
+
+      return rest;
     }),
 });
