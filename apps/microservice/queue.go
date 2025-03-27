@@ -94,7 +94,7 @@ func (q *Queue) worker(id int) {
 				return
 			}
 
-			log.Fatalf("Result Timing Message: %s", result.TimeMessage)
+			log.Printf("Result Timing Message: %s", result.TimeMessage)
 
 			log.Printf("Worker %d completed job: %s", id, job.ProcessID)
 		}(job)
