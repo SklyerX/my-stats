@@ -2,7 +2,6 @@
 
 import { trpc } from "@/server/trpc/client";
 import { buttonVariants } from "@workspace/ui/components/button";
-import { motion } from "framer-motion";
 import { LinkIcon } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";

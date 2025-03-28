@@ -9,6 +9,7 @@ import type {
   Track,
 } from "@/types/spotify";
 import { SPOTIFY_BASE_API } from "../constants";
+import { tryCatch } from "../try-catch";
 
 export class SpotifyAPI {
   private accessToken: string;
@@ -102,7 +103,12 @@ export class SpotifyAPI {
   }
 
   async getPlayback() {
-    const playbackState = await this.request<PlaybackResponse>("/me/player");
-    return playbackState;
+    const { data, error } = await tryCatch(
+      this.request<PlaybackResponse>("/me/player"),
+    );
+
+    if (error) return null;
+
+    return data;
   }
 }

@@ -2,7 +2,12 @@ import UserProfile from "./_components/UserProfile";
 import StatsContainer from "./_components/StatsContainer";
 import { serverClient } from "@/server/trpc/server-client";
 import { db } from "@workspace/database/connection";
-import Playback from "@/components/Playback";
+import {
+  userListeningHistory,
+  userTopArtists,
+  userTopTracks,
+} from "@workspace/database/schema";
+import { eq, sql } from "@workspace/database/drizzle";
 
 interface Props {
   params: {
@@ -27,15 +32,27 @@ export default async function UserPage({ params, searchParams }: Props) {
     }),
   ]);
 
-  const listeningHistory = await db.query.userListeningHistory.findFirst({
-    where: (fields, { eq }) => eq(fields.userId, data.user.id),
-  });
+  const [listeningHistory, topTracks, topArtists] = await db.batch([
+    db.query.userListeningHistory.findFirst({
+      where: (fields, { eq }) => eq(fields.userId, data.user.id),
+    }),
+    db
+      .select()
+      .from(userTopTracks)
+      .where(eq(userTopTracks.userId, data.user.id)),
+    db
+      .select()
+      .from(userTopArtists)
+      .where(eq(userTopArtists.userId, data.user.id)),
+  ]);
 
-  console.log({
-    data,
-    recentlyPlayed,
-    listeningHistory,
-  });
+  const result = {
+    history: listeningHistory,
+    tracks: topTracks,
+    artists: topArtists,
+  };
+
+  console.log(result);
 
   return (
     <div>
@@ -44,7 +61,7 @@ export default async function UserPage({ params, searchParams }: Props) {
         initialStats={data.stats}
         recentlyPlayed={recentlyPlayed}
         user={data.user}
-        listeningHistory={listeningHistory}
+        listeningHistory={result}
       />
     </div>
   );
