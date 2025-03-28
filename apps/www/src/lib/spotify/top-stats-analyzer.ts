@@ -36,6 +36,7 @@ export class TopStatsAnalyzer {
     time_range: TIME_RANGE,
     limit = 50,
     offset = 0,
+    albumLimit = 30,
   ): Promise<StatsResponse> {
     const [topTracks, topArtists, recentTracks, playlists, savedTracks] =
       await Promise.all([
@@ -109,7 +110,7 @@ export class TopStatsAnalyzer {
       "available_markets",
       "external_urls",
       "preview_url",
-    ]);
+    ]).slice(0, albumLimit);
 
     return {
       tracks: cleanedTracks.items,

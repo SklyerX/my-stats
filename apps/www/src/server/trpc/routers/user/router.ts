@@ -12,7 +12,6 @@ import { z } from "zod";
 import type { PlaybackResponse, RecentlyPlayedResponse } from "@/types/spotify";
 import { processArtistTask } from "@/trigger/process-artist";
 import { SpotifyAPI } from "@/lib/spotify/api";
-import { tryCatch } from "@/lib/try-catch";
 
 export const userRouter = router({
   top: publicProcedure
@@ -108,6 +107,7 @@ export const userRouter = router({
           time_range,
           limit ?? 50,
           offset ?? 0,
+          50,
         );
 
         console.log(

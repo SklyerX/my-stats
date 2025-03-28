@@ -146,6 +146,12 @@ export default async function TrackPage({ params }: Props) {
               </p>
               <p className="text-muted-foreground">Frequency</p>
             </div>
+            <div className="py-5 px-2 rounded-md bg-secondary/40 flex flex-col items-center justify-center">
+              <p className="text-lg font-semibold text-primary">
+                {data.audio_features.low_level.bpm.toFixed(2)}
+              </p>
+              <p className="text-muted-foreground">BPM</p>
+            </div>
           </div>
         ) : null}
       </div>
