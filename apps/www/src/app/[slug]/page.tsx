@@ -2,12 +2,8 @@ import UserProfile from "./_components/UserProfile";
 import StatsContainer from "./_components/StatsContainer";
 import { serverClient } from "@/server/trpc/server-client";
 import { db } from "@workspace/database/connection";
-import {
-  userListeningHistory,
-  userTopArtists,
-  userTopTracks,
-} from "@workspace/database/schema";
-import { eq, sql } from "@workspace/database/drizzle";
+import { userTopArtists, userTopTracks } from "@workspace/database/schema";
+import { eq } from "@workspace/database/drizzle";
 
 interface Props {
   params: {

@@ -13,6 +13,7 @@ import { TopArtists } from "@/components/stats/TopArtists";
 import { RecentlyPlayed } from "@/components/stats/RecentlyPlayed";
 import { TimeRangeSelector } from "@/components/stats/TimeRangeSelector";
 import type {
+  User,
   UserListeningHistory,
   UserTopArtist,
   UserTopTrack,
@@ -36,6 +37,8 @@ import {
 
 import Link from "next/link";
 import { cn } from "@workspace/ui/lib/utils";
+import { IoContrast } from "react-icons/io5";
+import { buttonVariants } from "@workspace/ui/components/button";
 
 interface Props {
   initialStats: Awaited<
@@ -53,6 +56,7 @@ interface Props {
     tracks?: UserTopTrack[] | null;
     artists?: UserTopArtist[] | null;
   } | null;
+  authedUser?: User;
 }
 
 const f = new Intl.NumberFormat("en-US", {
@@ -64,6 +68,7 @@ export default function StatsContainer({
   recentlyPlayed,
   user,
   listeningHistory,
+  authedUser,
 }: Props) {
   const [timeRange, setTimeRange] = useQueryState(
     "time_range",
@@ -207,6 +212,12 @@ export default function StatsContainer({
                 </Tooltip>
               </TooltipProvider>
             </TabsList>
+            <Link
+              href={`/${user.id}/compare`}
+              className={buttonVariants({ variant: "secondary" })}
+            >
+              <IoContrast className="size-4" /> Compare
+            </Link>
           </div>
         </div>
 

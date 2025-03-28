@@ -190,6 +190,7 @@ export const tokens = pgTable("tokens", {
   refreshTokenIv: text("refresh_token_iv").notNull(),
   refreshTokenTag: text("refresh_token_tag").notNull(),
   expiresAt: timestamp("expires_at", { mode: "date" }).notNull(),
+  lastRefreshed: timestamp("last_refreshed").notNull().defaultNow(),
 });
 
 export const uploadStatusEnum = pgEnum("upload_status", [

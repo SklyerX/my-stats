@@ -12,6 +12,7 @@ import { z } from "zod";
 import type { PlaybackResponse, RecentlyPlayedResponse } from "@/types/spotify";
 import { processArtistTask } from "@/trigger/process-artist";
 import { SpotifyAPI } from "@/lib/spotify/api";
+import { logger } from "@/lib/logger";
 
 export const userRouter = router({
   top: publicProcedure

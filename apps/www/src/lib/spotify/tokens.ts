@@ -5,9 +5,10 @@ import { decrypt, encrypt } from "../encryption";
 import { eq } from "@workspace/database/drizzle";
 import { env } from "@/env";
 
-// Constants for token management
-const REFRESH_THRESHOLD = 5 * 60; // Refresh if less than 5 minutes remaining
-const EXPIRATION_BUFFER = 60; // 1 minute buffer when storing expiration
+const REFRESH_THRESHOLD_MINUTES = 15;
+const EXPIRATION_BUFFER_SECONDS = 300;
+
+// TODO: figure out edge case. Why does it 99% of the time reset properly but sometimes it gets the expiration wrong?
 
 interface SpotifyTokens {
   access_token: string;
@@ -24,7 +25,7 @@ export async function updateSpotifyTokens(
   const now = Date.now();
   // Subtract buffer from expires_in to account for network latency
   const expires = new Date(
-    now + (tokens.expires_in - EXPIRATION_BUFFER) * 1000,
+    now + (tokens.expires_in - EXPIRATION_BUFFER_SECONDS) * 1000,
   );
 
   // Debug logging
@@ -32,7 +33,7 @@ export async function updateSpotifyTokens(
     setTokenAt: new Date(now).toISOString(),
     expiresAt: expires.toISOString(),
     expiresInSeconds: tokens.expires_in,
-    effectiveExpiresIn: tokens.expires_in - EXPIRATION_BUFFER,
+    effectiveExpiresIn: tokens.expires_in - EXPIRATION_BUFFER_SECONDS,
     minutesUntilExpiry: (expires.getTime() - now) / (1000 * 60),
   });
 
@@ -43,62 +44,99 @@ export async function updateSpotifyTokens(
       accessTokenIv: encryptedAccess.iv,
       accessTokenTag: encryptedAccess.tag,
       expiresAt: expires,
+      lastRefreshed: new Date(now),
     })
     .where(eq(tokensTable.userId, userId));
 }
 
 export async function getValidSpotifyToken(userId: string): Promise<string> {
-  const user = await db.query.users.findFirst({
-    where: (fields, { eq }) => eq(fields.id, userId),
-    with: {
-      tokens: true,
-    },
-  });
+  try {
+    const user = await db.query.users.findFirst({
+      where: (fields, { eq }) => eq(fields.id, userId),
+      with: {
+        tokens: true,
+      },
+    });
 
-  if (!user?.tokens) {
-    throw new Error("Invalid user Spotify credentials");
-  }
+    if (!user?.tokens) {
+      throw new Error("Invalid user Spotify credentials");
+    }
 
-  const { tokens } = user;
+    const { tokens } = user;
 
-  const accessToken = decrypt(
-    tokens.accessToken,
-    tokens.accessTokenIv,
-    tokens.accessTokenTag,
-  );
-  const refreshToken = decrypt(
-    tokens.refreshToken,
-    tokens.refreshTokenIv,
-    tokens.refreshTokenTag,
-  );
-
-  const now = Date.now();
-  const timeUntilExpiry = tokens.expiresAt.getTime() - now;
-  const minutesUntilExpiry = timeUntilExpiry / (1000 * 60);
-
-  // Debug logging
-  console.log({
-    currentTime: new Date(now).toISOString(),
-    tokenExpiresAt: tokens.expiresAt.toISOString(),
-    minutesUntilExpiry,
-    timeUntilExpiryMs: timeUntilExpiry,
-    shouldRefresh: timeUntilExpiry <= 10 * 60 * 1000, // Refresh if less than 10 minutes left
-  });
-
-  if (timeUntilExpiry <= 10 * 60 * 1000) {
-    // Refresh if less than 10 minutes remaining
-    console.log(
-      `Token expires soon, refreshing with ${minutesUntilExpiry.toFixed(2)} minutes remaining`,
+    const accessToken = decrypt(
+      tokens.accessToken,
+      tokens.accessTokenIv,
+      tokens.accessTokenTag,
     );
-    const newTokens = await refreshSpotifyToken(refreshToken);
-    await updateSpotifyTokens(userId, newTokens);
-    return newTokens.access_token;
-  }
+    const refreshToken = decrypt(
+      tokens.refreshToken,
+      tokens.refreshTokenIv,
+      tokens.refreshTokenTag,
+    );
 
-  console.log(
-    `Using existing token with ${minutesUntilExpiry.toFixed(2)} minutes remaining`,
-  );
-  return accessToken;
+    const now = Date.now();
+    const timeUntilExpiry = tokens.expiresAt.getTime() - now;
+    const minutesUntilExpiry = timeUntilExpiry / (1000 * 60);
+
+    // Debug logging
+    console.log({
+      currentTime: new Date(now).toISOString(),
+      tokenExpiresAt: tokens.expiresAt.toISOString(),
+      minutesUntilExpiry,
+      timeUntilExpiryMs: timeUntilExpiry,
+      shouldRefresh: minutesUntilExpiry <= REFRESH_THRESHOLD_MINUTES,
+    });
+
+    if (minutesUntilExpiry <= REFRESH_THRESHOLD_MINUTES) {
+      console.log(
+        `Token expires soon, refreshing with ${minutesUntilExpiry.toFixed(2)} minutes remaining`,
+      );
+
+      const newTokens = await refreshSpotifyToken(refreshToken);
+      await updateSpotifyTokens(userId, newTokens);
+      return newTokens.access_token;
+    }
+
+    console.log(
+      `Using existing token with ${minutesUntilExpiry.toFixed(2)} minutes remaining`,
+    );
+    return accessToken;
+  } catch (err) {
+    console.error("Error getting valid Spotify token:", err);
+
+    try {
+      const user = await db.query.users.findFirst({
+        where: (fields, { eq }) => eq(fields.id, userId),
+        with: {
+          tokens: true,
+        },
+      });
+
+      if (!user?.tokens) {
+        throw new Error("Invalid user Spotify credentials");
+      }
+
+      const refreshToken = decrypt(
+        user.tokens.refreshToken,
+        user.tokens.refreshTokenIv,
+        user.tokens.refreshTokenTag,
+      );
+
+      console.log("Forcing token refresh after error");
+
+      const newTokens = await refreshSpotifyToken(refreshToken);
+      await updateSpotifyTokens(userId, newTokens);
+
+      return newTokens.access_token;
+    } catch (refreshError) {
+      console.error("Failed forced refresh attempt:", refreshError);
+
+      throw new Error(
+        "Could not get valid Spotify token after multiple attempts",
+      );
+    }
+  }
 }
 
 async function refreshSpotifyToken(
@@ -122,5 +160,11 @@ async function refreshSpotifyToken(
     throw new Error("Failed to refresh token");
   }
 
-  return response.json();
+  const data = await response.json();
+
+  if (!data.refresh_token) {
+    data.refresh_token = refresh_token;
+  }
+
+  return data;
 }
