@@ -212,12 +212,6 @@ export default function StatsContainer({
                 </Tooltip>
               </TooltipProvider>
             </TabsList>
-            <Link
-              href={`/${user.id}/compare`}
-              className={buttonVariants({ variant: "secondary" })}
-            >
-              <IoContrast className="size-4" /> Compare
-            </Link>
           </div>
         </div>
 

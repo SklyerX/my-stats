@@ -1,5 +1,7 @@
 import { env } from "@/env";
+import { s3 } from "@/lib/s3-client";
 import { createSpotifyArtistEntry } from "@/server/trpc/actions/create-spotify-artist-entry";
+import { DeleteObjectCommand } from "@aws-sdk/client-s3";
 import { db } from "@workspace/database/connection";
 import { eq } from "@workspace/database/drizzle";
 import {
@@ -130,6 +132,13 @@ export async function POST(req: Request, { params }: Props) {
       })
       .where(eq(userExports.exportId, processorId)),
   ]);
+
+  const command = new DeleteObjectCommand({
+    Bucket: env.AWS_BUCKET_NAME,
+    Key: existingExport.fileName,
+  });
+
+  await s3.send(command);
 
   return new Response("Success", { status: 201 });
 }
