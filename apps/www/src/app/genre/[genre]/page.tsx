@@ -6,9 +6,9 @@ import ShowGenreWarning from "./_components/ShowGenreWarning";
 import { COOKIE_VALUES } from "@/types";
 
 interface Props {
-  params: {
+  params: Promise<{
     genre: string;
-  };
+  }>;
 }
 
 export default async function GenresPage({ params }: Props) {

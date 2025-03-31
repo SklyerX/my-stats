@@ -74,6 +74,7 @@ export default function StatsContainer({
     "time_range",
     parseAsStringLiteral(TIME_RANGES).withDefault("short_term"),
   );
+
   const [stats, setStats] = useState(initialStats);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const { slug } = useParams();
@@ -97,6 +98,7 @@ export default function StatsContainer({
       refetchOnMount: false,
       refetchOnReconnect: false,
       refetchOnWindowFocus: false,
+      queryKey: ["user.top", { slug: slug as string, time_range: timeRange }],
     },
   );
 

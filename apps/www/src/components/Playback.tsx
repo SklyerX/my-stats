@@ -36,6 +36,7 @@ export default function Playback({ userId }: Props) {
       refetchOnWindowFocus: false,
       refetchOnMount: false,
       refetchInterval: false,
+      queryKey: ["user.getPlayback", { userId }],
     },
   );
 

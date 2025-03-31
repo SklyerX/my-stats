@@ -7,12 +7,12 @@ import { eq } from "@workspace/database/drizzle";
 import { getCurrentSession } from "@/auth/session";
 
 interface Props {
-  params: {
+  params: Promise<{
     slug: string;
-  };
-  searchParams: {
+  }>;
+  searchParams: Promise<{
     time_range?: "short_term" | "medium_term" | "long_term";
-  };
+  }>;
 }
 
 export default async function UserPage({ params, searchParams }: Props) {

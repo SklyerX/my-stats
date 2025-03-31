@@ -6,9 +6,9 @@ import { db } from "@workspace/database/connection";
 import { z } from "zod";
 
 interface Props {
-  params: {
+  params: Promise<{
     slug: string;
-  };
+  }>;
 }
 
 const schema = z.object({
@@ -76,7 +76,7 @@ export async function GET(req: Request, { params }: Props) {
     );
 
     if (!existingUser) {
-      console.log(`[${requestId}] ❌ User not found for slug: ${params.slug}`);
+      console.log(`[${requestId}] ❌ User not found for slug: ${slug}`);
       console.log(
         `[${requestId}] ========= REQUEST END (${Date.now() - startTime}ms) =========\n`,
       );
@@ -130,7 +130,7 @@ export async function GET(req: Request, { params }: Props) {
     console.log(`[${requestId}] 📊 Analyzing stats...`);
 
     const analysisStart = Date.now();
-    const analyzer = new TopStatsAnalyzer(accessToken);
+    const analyzer = new TopStatsAnalyzer(accessToken, existingUser.spotifyId);
     const stats = await analyzer.getStatistics(
       time_range,
       data.limit ?? 50,
