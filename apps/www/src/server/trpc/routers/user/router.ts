@@ -9,10 +9,16 @@ import { TRPCError } from "@trpc/server";
 import { headers } from "next/headers";
 import type { InternalTopUserStats } from "@/types/response";
 import { z } from "zod";
-import type { PlaybackResponse, RecentlyPlayedResponse } from "@/types/spotify";
+import {
+  TIME_RANGES,
+  type PlaybackResponse,
+  type RecentlyPlayedResponse,
+} from "@/types/spotify";
 import { processArtistTask } from "@/trigger/process-artist";
 import { SpotifyAPI } from "@/lib/spotify/api";
 import { logger } from "@/lib/logger";
+import { protectedProcedure } from "../../middleware/auth";
+import { getUserTopStats } from "@/lib/spotify/user-stats-service";
 
 export const userRouter = router({
   top: publicProcedure
@@ -44,6 +50,7 @@ export const userRouter = router({
 
       try {
         console.log(`[${requestId}] 🔍 Looking up user in DB...`);
+
         const dbStart = Date.now();
         const existingUser = await db.query.users.findFirst({
           where: (fields, { eq }) => eq(fields.slug, slug),
@@ -60,98 +67,14 @@ export const userRouter = router({
           });
         }
 
-        const cacheKey = CACHE_KEYS.top(existingUser.spotifyId, time_range);
-        console.log(`[${requestId}] 🔍 Redis GET for key: ${cacheKey}`);
-        const redisGetStart = Date.now();
-
-        const cached = await redis.get(cacheKey);
-
-        console.log(
-          `[${requestId}] Redis GET completed in ${Date.now() - redisGetStart}ms`,
+        const result = await getUserTopStats(
+          existingUser,
+          input.time_range ?? "short_term",
+          input.limit ?? 50,
+          input.offset ?? 0,
         );
 
-        console.log(`[${requestId}] Cache ${cached ? "HIT ✅" : "MISS ❌"}`);
-
-        if (cached) {
-          console.log(`[${requestId}] Returning cached data`);
-          console.log(
-            `[${requestId}] ========= REQUEST END (${Date.now() - startTime}ms) =========\n`,
-          );
-          return {
-            stats: cached,
-            user: {
-              image: existingUser.image,
-              name: existingUser.username,
-              bio: existingUser.bio,
-              id: existingUser.id,
-            },
-          } as InternalTopUserStats;
-        }
-
-        console.log(`[${requestId}] 🎵 Fetching Spotify token...`);
-
-        const tokenStart = Date.now();
-        const accessToken = await getValidSpotifyToken(existingUser.id);
-
-        console.log(
-          `[${requestId}] Token fetch completed in ${Date.now() - tokenStart}ms`,
-        );
-
-        console.log(`[${requestId}] 📊 Analyzing stats...`);
-        const analysisStart = Date.now();
-
-        const analyzer = new TopStatsAnalyzer(
-          accessToken,
-          existingUser.spotifyId,
-        );
-        const stats = await analyzer.getStatistics(
-          time_range,
-          limit ?? 50,
-          offset ?? 0,
-          50,
-        );
-
-        console.log(
-          `[${requestId}] Stats analysis completed in ${Date.now() - analysisStart}ms`,
-        );
-
-        console.log(`[${requestId}] 💾 Redis SET for key: ${cacheKey}`);
-
-        const redisSetStart = Date.now();
-
-        console.log("running trigger.dev");
-        const triggerDevStart = Date.now();
-
-        await processArtistTask.trigger({
-          artists: stats.artists,
-          accessToken,
-        });
-
-        console.log(`end of trigger.dev in ${Date.now() - triggerDevStart}ms`);
-
-        await redis.set(cacheKey, stats, {
-          ex: CACHE_TIMES[time_range],
-        });
-
-        console.log(
-          `[${requestId}] Redis SET completed in ${Date.now() - redisSetStart}ms`,
-        );
-
-        const totalTime = Date.now() - startTime;
-
-        console.log(
-          `[${requestId}] ========= REQUEST END (${totalTime}ms) =========\n`,
-        );
-
-        return {
-          stats,
-          user: {
-            image: existingUser.image,
-            name: existingUser.username,
-            bio: existingUser.bio,
-            id: existingUser.id,
-          },
-        } as InternalTopUserStats;
+        return result;
       } catch (err) {
         console.error(`[${requestId}] ❌ ERROR:`, err);
         console.log(
@@ -284,5 +207,62 @@ export const userRouter = router({
         console.error(err);
         return null;
       }
+    }),
+  compare: protectedProcedure
+    .input(
+      z.object({
+        slug: z.string(),
+        timeRange: z.enum(TIME_RANGES).optional().default("short_term"),
+      }),
+    )
+    .query(async ({ input, ctx }) => {
+      const { slug, timeRange } = input;
+
+      const existingUser = await db.query.users.findFirst({
+        where: (fields, { eq }) => eq(fields.slug, slug),
+      });
+
+      if (!existingUser)
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "User not found",
+        });
+
+      if (existingUser.id === ctx.user.id)
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "You cannot compare stats with yourself",
+        });
+
+      const targetStats = await getUserTopStats(existingUser, timeRange);
+      const selfStats = await getUserTopStats(ctx.user, timeRange);
+
+      const mutualArtists = targetStats.stats.artists.filter((targetArtist) =>
+        selfStats.stats.artists.some(
+          (selfArtist) => selfArtist.id === targetArtist.id,
+        ),
+      );
+      const mutualTracks = targetStats.stats.tracks.filter((targetTrack) =>
+        selfStats.stats.tracks.some(
+          (selfTrack) => selfTrack.id === targetTrack.id,
+        ),
+      );
+      const mutualAlbums = targetStats.stats.albums.filter((targetAlbum) =>
+        selfStats.stats.albums.some(
+          (selfAlbum) => selfAlbum.id === targetAlbum.id,
+        ),
+      );
+      const mutualGenres = targetStats.stats.genres.filter((targetGenre) =>
+        selfStats.stats.genres.some((selfGenre) => selfGenre === targetGenre),
+      );
+
+      return {
+        similarities: {
+          artists: mutualArtists,
+          tracks: mutualTracks,
+          albums: mutualAlbums,
+          genres: mutualGenres,
+        },
+      };
     }),
 });

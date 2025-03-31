@@ -4,6 +4,7 @@ import { serverClient } from "@/server/trpc/server-client";
 import { db } from "@workspace/database/connection";
 import { userTopArtists, userTopTracks } from "@workspace/database/schema";
 import { eq } from "@workspace/database/drizzle";
+import { getCurrentSession } from "@/auth/session";
 
 interface Props {
   params: {
@@ -18,7 +19,7 @@ export default async function UserPage({ params, searchParams }: Props) {
   const { slug } = await params;
   const { time_range } = await searchParams;
 
-  const [data, recentlyPlayed] = await Promise.all([
+  const [data, recentlyPlayed, session] = await Promise.all([
     serverClient.user.top({
       slug,
       time_range: time_range ?? "short_term",
@@ -26,6 +27,7 @@ export default async function UserPage({ params, searchParams }: Props) {
     serverClient.user.recentlyPlayed({
       slug,
     }),
+    getCurrentSession(),
   ]);
 
   const [listeningHistory, topTracks, topArtists] = await db.batch([
@@ -52,7 +54,7 @@ export default async function UserPage({ params, searchParams }: Props) {
 
   return (
     <div>
-      <UserProfile user={data.user} />
+      <UserProfile slug={slug} session={session} user={data.user} />
       <StatsContainer
         initialStats={data.stats}
         recentlyPlayed={recentlyPlayed}

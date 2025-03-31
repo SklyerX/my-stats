@@ -118,13 +118,16 @@ export default function StatsContainer({
     <div className="space-y-8 mt-10 p-5 w-full">
       <Tabs defaultValue="stats">
         <div
-          className={cn("flex justify-between relative z-10", {
-            "justify-end": !listeningHistory?.history,
-          })}
+          className={cn(
+            "flex flex-col sm:flex-row justify-between relative z-10",
+            {
+              "justify-end": !listeningHistory?.history,
+            },
+          )}
         >
           {listeningHistory?.history && (
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-0 sm:gap-5">
-              <div className="flex flex-col mt-10">
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-5">
+              <div className="flex flex-col">
                 <p className="font-semibold text-xl">
                   {f.format(listeningHistory.history.totalTracks)}
                 </p>
@@ -132,7 +135,7 @@ export default function StatsContainer({
                   Streams
                 </span>
               </div>
-              <div className="flex flex-col mt-10">
+              <div className="flex flex-col">
                 <p className="font-semibold text-xl">
                   {f.format(listeningHistory.history.listeningHours)}
                 </p>
@@ -140,7 +143,7 @@ export default function StatsContainer({
                   Hours Streamed
                 </span>
               </div>
-              <div className="flex flex-col mt-10">
+              <div className="flex flex-col">
                 <p className="font-semibold text-xl">
                   {f.format(
                     Math.round(listeningHistory.history.listeningHours * 60),
@@ -150,7 +153,7 @@ export default function StatsContainer({
                   Minutes Streamed
                 </span>
               </div>
-              <div className="flex flex-col mt-10">
+              <div className="flex flex-col">
                 <p className="font-semibold text-xl">
                   {f.format(listeningHistory.history.uniqueTracks)}
                 </p>
@@ -158,7 +161,7 @@ export default function StatsContainer({
                   Unique Tracks
                 </span>
               </div>
-              <div className="flex flex-col mt-10">
+              <div className="flex flex-col">
                 <p className="font-semibold text-xl">
                   {f.format(listeningHistory.history.uniqueArtists)}
                 </p>
@@ -166,7 +169,7 @@ export default function StatsContainer({
                   Unique Artists
                 </span>
               </div>
-              <div className="flex flex-col mt-10">
+              <div className="flex flex-col">
                 <p className="font-semibold text-xl">
                   {convertTo12Hour(listeningHistory.history.peakHour)}
                 </p>
@@ -177,7 +180,7 @@ export default function StatsContainer({
             </div>
           )}
 
-          <div className="flex items-center h-fit gap-5">
+          <div className="flex items-center h-fit gap-5 my-10 sm:my-0">
             <TimeRangeSelector
               isLoading={isLoading}
               onTimeRangeChange={handleTimeRangeChange}

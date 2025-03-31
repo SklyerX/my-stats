@@ -43,23 +43,30 @@ export async function GET(request: Request): Promise<Response> {
 
     console.log("access token retrieved", { accessTokenExpiresAt });
 
-    const userRequest = new Request("https://api.spotify.com/v1/me");
+    const userRequest = new Request("https://api.spotify.com/v1/me", {
+      method: "GET",
+    });
+
     userRequest.headers.set("Authorization", `Bearer ${accessToken}`);
+    userRequest.headers.set("Content-Type", "application/json");
 
     console.log("fetching user data");
 
+    console.log(accessToken);
+
     const userResponse = await fetch(userRequest);
+    console.log(userResponse, "user response");
     const userResult: unknown = await userResponse.json();
     const userParser = new ObjectParser(userResult);
 
     const spotifyUserId = userParser.getString("id");
     const spotifyUserName = userParser.getString("display_name");
     const spotifyUserEmail = userParser.getString("email");
-    const spotifyUserImage = userParser.getArray("images")[0] as {
+    const spotifyUserImages = userParser.getArray("images") as Array<{
       url: string;
       width: number;
       height: number;
-    };
+    }>;
 
     console.log("fetched user data", spotifyUserId, spotifyUserName);
 
@@ -109,7 +116,10 @@ export async function GET(request: Request): Promise<Response> {
         slug: spotifyUserName.toLowerCase(),
         spotifyId: spotifyUserId,
         username: spotifyUserName,
-        image: spotifyUserImage.url,
+        image:
+          spotifyUserImages.length > 0
+            ? spotifyUserImages.at(0)?.url
+            : `https://api.dicebear.com/9.x/glass/svg?seed=${spotifyUserName}`,
       })
       .returning();
 
