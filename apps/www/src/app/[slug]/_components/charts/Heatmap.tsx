@@ -1,5 +1,11 @@
 import type { UserListeningHistory } from "@workspace/database/schema";
 import { Card, CardContent } from "@workspace/ui/components/card";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@workspace/ui/components/tooltip";
 import React from "react";
 
 interface Props {
@@ -41,10 +47,14 @@ export default function Heatmap({ data, year }: Props) {
 
   const getCellColor = (count: number) => {
     if (count === 0) return colorLevels[0];
-    if (count < 7) return colorLevels[1];
-    if (count < 21) return colorLevels[2];
-    if (count < 45) return colorLevels[3];
-    return colorLevels[4];
+
+    const maxCount = data.maxCount;
+    const percentage = count / maxCount;
+
+    if (percentage <= 0.15) return colorLevels[1]; // 0-15% of max
+    if (percentage <= 0.4) return colorLevels[2]; // 15-40% of max
+    if (percentage <= 0.7) return colorLevels[3]; // 40-70% of max
+    return colorLevels[4]; // 70-100% of max
   };
 
   return (
@@ -82,14 +92,25 @@ export default function Heatmap({ data, year }: Props) {
                   key={`week-${weekIndex}`}
                   className="grid grid-flow-row gap-1"
                 >
-                  {week.map((day, dayIndex) => (
-                    <div
-                      key={`day-${weekIndex}-${dayIndex}`}
-                      className="w-4 h-4 rounded-sm transition-colors duration-200 hover:ring-1 hover:ring-gray-400"
-                      style={{ backgroundColor: getCellColor(day.count) }}
-                      title={getTooltipContent(day.count, day.date as string)}
-                    />
-                  ))}
+                  <TooltipProvider delayDuration={500}>
+                    <Tooltip>
+                      {week.map((day, dayIndex) => (
+                        <React.Fragment key={`day-${weekIndex}-${dayIndex}`}>
+                          <TooltipTrigger>
+                            <div
+                              className="w-4 h-4 rounded-sm transition-colors duration-200 hover:ring-1 hover:ring-gray-400"
+                              style={{
+                                backgroundColor: getCellColor(day.count),
+                              }}
+                            />
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            {getTooltipContent(day.count, day.date as string)}
+                          </TooltipContent>
+                        </React.Fragment>
+                      ))}
+                    </Tooltip>
+                  </TooltipProvider>
                 </div>
               ))}
             </div>
