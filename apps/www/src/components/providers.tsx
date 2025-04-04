@@ -6,6 +6,7 @@ import { httpBatchLink } from "@trpc/react-query";
 import { ThemeProvider as NextThemesProvider } from "next-themes";
 import { useState, type ReactNode } from "react";
 import { NuqsAdapter } from "nuqs/adapters/next/app";
+import { Toaster } from "@workspace/ui/components/sonner";
 
 function getUrl() {
   const base = (() => {
@@ -34,7 +35,10 @@ export function Providers({ children }: { children: ReactNode }) {
     >
       <trpc.Provider client={trpcClient} queryClient={queryClient}>
         <QueryClientProvider client={queryClient}>
-          <NuqsAdapter>{children}</NuqsAdapter>
+          <NuqsAdapter>
+            {children}
+            <Toaster />
+          </NuqsAdapter>
         </QueryClientProvider>
       </trpc.Provider>
     </NextThemesProvider>
