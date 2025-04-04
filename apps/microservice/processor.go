@@ -64,17 +64,45 @@ type ListeningTime struct {
 	Minutes int `json:"minutes"`
 }
 
+type TimesOfDay struct {
+	Count int `json:"count"`
+	Hour  int `json:"hour"`
+}
+
+type DateCount struct {
+	Date  string `json:"date"`
+	Count int    `json:"count"`
+}
+
+type HeatmapData struct {
+	DailyCounts []DateCount `json:"dailyCounts"`
+	Years       []int       `json:"years"`
+	MaxCount    int         `json:"maxCount"`
+}
+
+type WeekdayAnalysis struct {
+	DayCountMap   map[time.Weekday]int `json:"dayCountMap"`   // Count by day name for visualization
+	WeekdayAvg    int                  `json:"weekdayAvg"`    // Average for Mon-Fri
+	WeekendAvg    int                  `json:"weekendAvg"`    // Average for Sat-Sun
+	MostActiveDay string               `json:"mostActiveDay"` // Day with most activity
+}
+
 type ProcessResult struct {
-	ProcessID     string        `json:"processId"`
-	TotalMs       int           `json:"totalMs"`
-	TopArtists    []ArtistData  `json:"topArtists"`
-	TopTracks     []TrackData   `json:"topTracks"`
-	TimeMessage   string        `json:"timeMessage"`
-	UniqueArtists int           `json:"uniqueArtists"`
-	UniqueTracks  int           `json:"uniqueTracks"`
-	TotalTracks   int           `json:"totalTracks"`
-	ListeningTime ListeningTime `json:"listeningTime"`
-	PeakHour      int           `json:"peakHour"`
+	ProcessID       string                 `json:"processId"`
+	TotalMs         int                    `json:"totalMs"`
+	TopArtists      []ArtistData           `json:"topArtists"`
+	TopTracks       []TrackData            `json:"topTracks"`
+	TimeMessage     string                 `json:"timeMessage"`
+	UniqueArtists   int                    `json:"uniqueArtists"`
+	UniqueTracks    int                    `json:"uniqueTracks"`
+	TotalTracks     int                    `json:"totalTracks"`
+	ListeningTime   ListeningTime          `json:"listeningTime"`
+	PeakHour        int                    `json:"peakHour"`
+	TimesOfDay      []TimesOfDay           `json:"times_of_day"`
+	TravelerMessage string                 `json:"traveler_message"`
+	Heatmap         HeatmapData            `json:"heatmap"`
+	WeekdayAnalysis WeekdayAnalysis        `json:"weekday_analysis"`
+	LongestSession  map[string]interface{} `json:"longest_session"`
 }
 
 func ProcessListeningHistoryFiles(jsonFilePaths []string, processId string) (*ProcessResult, error) {
@@ -223,18 +251,40 @@ func ProcessListeningHistoryFiles(jsonFilePaths []string, processId string) (*Pr
 		Hours   int
 	})
 
-	// send all tracks?
+	timesOfDay := make([]TimesOfDay, 0, len(timeOfDayMap))
+
+	for hour, count := range timeOfDayMap {
+		timesOfDay = append(timesOfDay, TimesOfDay{
+			Count: count,
+			Hour:  hour,
+		})
+	}
+
+	var travelerMessage string
+
+	if len(countryCodes) > 1 {
+		travelerMessage = fmt.Sprintf("Your music has traveled %d countries with you!", len(countryCodes))
+	}
+
+	heatmapData := processHeatmapData(simplifiedTracks)
+	weekdayAnalysis := getWeekdayAnalysis(simplifiedTracks)
+	longestSession := getLongestSession(simplifiedTracks)
 
 	result := &ProcessResult{
-		ProcessID:     processId,
-		TotalMs:       totalMs,
-		TopArtists:    topArtists[:min(10, len(topArtists))],
-		TopTracks:     topTracks[:min(10, len(topTracks))],
-		TimeMessage:   timeMessage,
-		PeakHour:      peakHour,
-		UniqueArtists: listening_stats["unique_artists"].(int),
-		UniqueTracks:  listening_stats["unique_tracks"].(int),
-		TotalTracks:   listening_stats["total_tracks_played"].(int),
+		ProcessID:       processId,
+		TotalMs:         totalMs,
+		TopArtists:      topArtists[:min(10, len(topArtists))],
+		TopTracks:       topTracks[:min(25, len(topTracks))],
+		TimeMessage:     timeMessage,
+		PeakHour:        peakHour,
+		UniqueArtists:   listening_stats["unique_artists"].(int),
+		UniqueTracks:    listening_stats["unique_tracks"].(int),
+		TotalTracks:     listening_stats["total_tracks_played"].(int),
+		TimesOfDay:      timesOfDay,
+		TravelerMessage: travelerMessage,
+		Heatmap:         heatmapData,
+		WeekdayAnalysis: weekdayAnalysis,
+		LongestSession:  longestSession,
 		ListeningTime: ListeningTime{
 			Hours:   stats.Hours,
 			Minutes: stats.Minutes,
@@ -487,4 +537,246 @@ func calculateListeningStats(simplifiedTracks []SimplifiedTrack, totalMs int) ma
 		},
 	}
 
+}
+
+func processHeatmapData(simplifiedTrack []SimplifiedTrack) HeatmapData {
+	dateCountMap := make(map[string]int)
+	yearSet := make(map[int]bool)
+
+	for _, track := range simplifiedTrack {
+		datePart := track.Ts[:10]
+
+		dateCountMap[datePart]++
+
+		year, _ := time.Parse("2006-01-02", datePart)
+		yearSet[year.Year()] = true
+	}
+
+	var dailyCounts []DateCount
+	for date, count := range dateCountMap {
+		dailyCounts = append(dailyCounts, DateCount{
+			Date:  date,
+			Count: count,
+		})
+	}
+
+	sort.Slice(dailyCounts, func(i, j int) bool {
+		return dailyCounts[i].Date < dailyCounts[j].Date
+	})
+
+	var years []int
+	for year := range yearSet {
+		years = append(years, year)
+	}
+	sort.Ints(years)
+
+	maxCount := 0
+	for _, count := range dateCountMap {
+		if count > maxCount {
+			maxCount = count
+		}
+	}
+
+	return HeatmapData{
+		DailyCounts: dailyCounts,
+		Years:       years,
+		MaxCount:    maxCount,
+	}
+}
+
+type Days struct {
+	Count int          `json:"count"`
+	Day   time.Weekday `json:"day"`
+}
+
+func getWeekdayAnalysis(simplifiedTracks []SimplifiedTrack) WeekdayAnalysis {
+	daysMap := make(map[time.Weekday]int)
+
+	for _, track := range simplifiedTracks {
+		datePart := track.Ts[:10]
+
+		day, err := time.Parse("2006-01-02", datePart)
+
+		if err != nil {
+			continue
+		}
+
+		daysMap[day.Weekday()]++
+	}
+
+	weekends := make([]Days, 0)
+	weekdays := make([]Days, 0)
+
+	for day, count := range daysMap {
+		if day == time.Sunday || day == time.Saturday {
+			weekends = append(weekends, Days{
+				Count: count,
+				Day:   day,
+			})
+		} else {
+			weekdays = append(weekdays, Days{
+				Count: count,
+				Day:   day,
+			})
+		}
+	}
+
+	var weekdayTotal, weekendTotal int
+	for _, day := range weekdays {
+		weekdayTotal += day.Count
+	}
+	for _, day := range weekends {
+		weekendTotal += day.Count
+	}
+
+	weekdayAvg := 0
+	if len(weekdays) > 0 {
+		weekdayAvg = weekdayTotal / len(weekdays)
+	}
+
+	weekendAvg := 0
+	if len(weekends) > 0 {
+		weekendAvg = weekendTotal / len(weekends)
+	}
+
+	// Find most active day
+	var mostActiveDay time.Weekday
+	var mostActiveCount int
+
+	for day, count := range daysMap {
+		if count > mostActiveCount {
+			mostActiveCount = count
+			mostActiveDay = day
+		}
+	}
+
+	return WeekdayAnalysis{
+		DayCountMap:   daysMap,
+		WeekdayAvg:    weekdayAvg,
+		WeekendAvg:    weekendAvg,
+		MostActiveDay: mostActiveDay.String(),
+	}
+}
+
+func getLongestSession(simplifiedTracks []SimplifiedTrack) map[string]interface{} {
+	var currentSessionStart,
+		currentSessionEnd,
+		longestSessionStart,
+		longestSessionEnd,
+		previousTimestamp time.Time
+
+	var currentSessionDuration,
+		longestSessionDuration time.Duration
+
+	totalSessions := 0
+
+	currentArtistsMap := make(map[string]int)
+	currentTracksMap := make(map[string]int)
+
+	longestArtistsMap := make(map[string]int)
+	longestTracksMap := make(map[string]int)
+
+	sort.Slice(simplifiedTracks, func(i, j int) bool {
+		return simplifiedTracks[i].Ts < simplifiedTracks[j].Ts
+	})
+
+	layout := "2006-01-02T15:04:05Z"
+
+	for index, track := range simplifiedTracks {
+		currentDate, err := time.Parse(layout, track.Ts)
+
+		if err != nil {
+			fmt.Printf("Could not parse time for track at index: %d", index)
+			continue
+		}
+
+		if index == 0 {
+			currentSessionStart = currentDate
+			previousTimestamp = currentDate
+			totalSessions = 1
+
+			currentArtistsMap[track.Artist]++
+			currentTracksMap[track.Track]++
+
+			continue
+		}
+
+		diff := currentDate.Sub(previousTimestamp)
+		gap := diff.Minutes()
+
+		if gap >= 60 {
+			currentSessionEnd = previousTimestamp
+			currentSessionDuration = time.Duration(currentSessionEnd.Sub(currentSessionStart))
+
+			if currentSessionDuration > longestSessionDuration {
+				longestSessionDuration = currentSessionDuration
+				longestSessionStart = currentSessionStart
+				longestSessionEnd = currentSessionEnd
+
+				longestArtistsMap = make(map[string]int)
+				longestTracksMap = make(map[string]int)
+
+				// Copy current session data to longest
+				for k, v := range currentArtistsMap {
+					longestArtistsMap[k] = v
+				}
+				for k, v := range currentTracksMap {
+					longestTracksMap[k] = v
+				}
+			}
+
+			currentSessionStart = currentDate
+			totalSessions++
+
+			currentArtistsMap = make(map[string]int)
+			currentTracksMap = make(map[string]int)
+
+			currentArtistsMap[track.Artist]++
+			currentTracksMap[track.Track]++
+		} else {
+			currentArtistsMap[track.Artist]++
+			currentTracksMap[track.Track]++
+		}
+
+		previousTimestamp = currentDate
+	}
+
+	currentSessionEnd = previousTimestamp
+	currentSessionDuration = currentSessionEnd.Sub(currentSessionStart)
+
+	if currentSessionDuration > longestSessionDuration {
+		longestSessionStart = currentSessionStart
+		longestSessionEnd = currentSessionEnd
+		longestSessionDuration = currentSessionDuration
+
+		longestArtistsMap = currentArtistsMap
+		longestTracksMap = currentTracksMap
+	}
+
+	return map[string]interface{}{
+		"sessionStart":    longestSessionStart,
+		"sessionEnd":      longestSessionEnd,
+		"duration":        longestSessionDuration,
+		"durationMinutes": longestSessionDuration.Minutes(),
+		"totalSessions":   totalSessions,
+		"session_insights": struct {
+			TotalTracks   int `json:"total_tracks"`
+			UniqueTracks  int `json:"unique_tracks"`
+			TotalArtists  int `json:"total_artists"`
+			UniqueArtists int `json:"unique_artists"`
+		}{
+			TotalTracks:   sumValues(longestTracksMap),
+			UniqueTracks:  len(longestTracksMap),
+			TotalArtists:  sumValues(longestArtistsMap),
+			UniqueArtists: len(longestArtistsMap),
+		},
+	}
+}
+
+func sumValues(m map[string]int) int {
+	sum := 0
+	for _, v := range m {
+		sum += v
+	}
+	return sum
 }

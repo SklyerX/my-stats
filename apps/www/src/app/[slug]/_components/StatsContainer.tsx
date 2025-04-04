@@ -13,10 +13,10 @@ import { TopArtists } from "@/components/stats/TopArtists";
 import { RecentlyPlayed } from "@/components/stats/RecentlyPlayed";
 import { TimeRangeSelector } from "@/components/stats/TimeRangeSelector";
 import type {
+  Artists,
+  Track,
   User,
   UserListeningHistory,
-  UserTopArtist,
-  UserTopTrack,
 } from "@workspace/database/schema";
 import { convertTo12Hour } from "@/lib/utils";
 import Playback from "@/components/Playback";
@@ -35,10 +35,12 @@ import {
   TooltipTrigger,
 } from "@workspace/ui/components/tooltip";
 
-import Link from "next/link";
 import { cn } from "@workspace/ui/lib/utils";
-import { IoContrast } from "react-icons/io5";
-import { buttonVariants } from "@workspace/ui/components/button";
+import { SessionInsightsChart } from "./charts/SessionInsightsChart";
+import ListeningSessionStats from "./sections/ListeningSessionStats";
+import StreamingStats from "./sections/StreamingStats";
+import TopHistoryItems from "./sections/TopHistoryItems";
+import HeatmapSection from "./sections/HeatmapSection";
 
 interface Props {
   initialStats: Awaited<
@@ -53,8 +55,8 @@ interface Props {
   >;
   listeningHistory?: {
     history: UserListeningHistory | undefined;
-    tracks?: UserTopTrack[] | null;
-    artists?: UserTopArtist[] | null;
+    tracks?: Track[] | undefined;
+    artists?: Artists[] | undefined;
   } | null;
   authedUser?: User;
 }
@@ -73,6 +75,10 @@ export default function StatsContainer({
   const [timeRange, setTimeRange] = useQueryState(
     "time_range",
     parseAsStringLiteral(TIME_RANGES).withDefault("short_term"),
+  );
+  const [tab, setTab] = useQueryState(
+    "tab",
+    parseAsStringLiteral(["stats", "history"]).withDefault("stats"),
   );
 
   const [stats, setStats] = useState(initialStats);
@@ -118,7 +124,10 @@ export default function StatsContainer({
 
   return (
     <div className="space-y-8 mt-10 p-5 w-full">
-      <Tabs defaultValue="stats">
+      <Tabs
+        defaultValue={tab}
+        onValueChange={(tab) => setTab(tab as "stats" | "history")}
+      >
         <div
           className={cn(
             "flex flex-col sm:flex-row justify-between relative z-10",
@@ -263,70 +272,44 @@ export default function StatsContainer({
           />
         </TabsContent>
         <TabsContent value="history">
-          <p className="text-xl font-medium mt-5">
-            {listeningHistory?.history?.timeMessage}
+          <h3 className="text-2xl font-semibold mt-10">
+            {user.name}'s Music Profile
+          </h3>
+          <p className="text-lg text-zinc-400 mb-6 mt-2">
+            {listeningHistory?.history?.timeMessage},{" "}
+            {listeningHistory?.history?.travelerMessage}
           </p>
-          <div className="space-y-4 flex flex-col mt-10">
-            <h2 className="text-2xl font-semibold">Top #10 Tracks</h2>
-            <p className="mt-1 text-muted-foreground">
-              {user.name}'s top tracks of all time.
-            </p>
 
-            {listeningHistory?.tracks
-              ?.sort((a, b) => a.rank - b.rank)
-              .map((track) => (
-                <Link
-                  className="p-3 bg-[#212121]/40 rounded-lg"
-                  href={`/track/${track.trackId}`}
-                  key={`history_${track.trackId}`}
-                >
-                  <div className="flex items-center gap-2">
-                    <span
-                      className={cn("text-xl font-semibold", {
-                        "text-muted-foreground": track.rank > 2,
-                        "text-yellow-300": track.rank === 0,
-                        "text-emerald-400": track.rank === 1,
-                      })}
-                    >
-                      #{track.rank + 1}
-                    </span>
-                    <h3 className="text-2xl font-medium">{track.trackName}</h3>
-                  </div>
-                  <p className="mt-2">{track.artistName}</p>
-                </Link>
-              ))}
-          </div>
-          <div className="space-y-4 flex flex-col mt-10">
-            <h2 className="text-2xl font-semibold">Top #10 Artists</h2>
-            <p className="mt-1 text-muted-foreground">
-              {user.name}'s top artists of all time.
-            </p>
+          {listeningHistory?.history?.heatmapData && (
+            <HeatmapSection data={listeningHistory.history.heatmapData} />
+          )}
 
-            {listeningHistory?.artists
-              ?.sort((a, b) => a.rank - b.rank)
-              .map((artist) => (
-                <Link
-                  className="p-3 rounded-lg"
-                  href={`/artist/${artist.artistId}`}
-                  key={`history_${artist.artistId}`}
-                >
-                  <div className="flex items-center gap-2">
-                    <span
-                      className={cn("text-xl font-semibold", {
-                        "text-muted-foreground": artist.rank > 2,
-                        "text-yellow-300": artist.rank === 0,
-                        "text-emerald-400": artist.rank === 1,
-                      })}
-                    >
-                      #{artist.rank + 1}
-                    </span>
-                    <h3 className="text-2xl font-medium">
-                      {artist.artistName}
-                    </h3>
-                  </div>
-                </Link>
-              ))}
-          </div>
+          {listeningHistory?.history?.longestSession && (
+            <>
+              <ListeningSessionStats
+                session={listeningHistory.history.longestSession}
+              />
+              <SessionInsightsChart
+                data={listeningHistory.history.longestSession}
+              />
+            </>
+          )}
+
+          {listeningHistory?.history?.timesOfDay &&
+            listeningHistory.history?.weekdayAnalysis && (
+              <StreamingStats
+                timesOfDay={listeningHistory?.history?.timesOfDay}
+                weekdayAnalysis={listeningHistory?.history?.weekdayAnalysis}
+              />
+            )}
+
+          {listeningHistory?.tracks && listeningHistory.artists && (
+            <TopHistoryItems
+              displayName={user.name}
+              tracks={listeningHistory?.tracks}
+              artists={listeningHistory?.artists}
+            />
+          )}
         </TabsContent>
       </Tabs>
     </div>

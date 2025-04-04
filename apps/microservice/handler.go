@@ -13,6 +13,7 @@ import (
 func SendToBackend(payload *ProcessResult) error {
 
 	appUrl := os.Getenv("MAIN_APP_URL")
+	fmt.Printf("Sending data back to main app with the url of: %s", appUrl)
 
 	url := fmt.Sprintf("%s/api/processors/%s/results", appUrl, payload.ProcessID)
 

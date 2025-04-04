@@ -68,7 +68,10 @@ func ExtractAndFindAudioHistoryFiles(zipPath, destDir string) ([]string, error) 
 				if file.IsDir() {
 					continue
 				}
-				if filepath.Ext(file.Name()) == ".json" {
+
+				fileNameLowercased := strings.ToLower(file.Name())
+
+				if filepath.Ext(file.Name()) == ".json" && strings.Contains(fileNameLowercased, "history") && strings.Contains(fileNameLowercased, "audio") {
 					jsonPath := filepath.Join(spotifyFolder, file.Name())
 					log.Printf("Found JSON file: %s", jsonPath)
 					folderJsonFiles = append(folderJsonFiles, jsonPath)

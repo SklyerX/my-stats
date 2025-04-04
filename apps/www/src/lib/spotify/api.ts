@@ -72,6 +72,13 @@ export class SpotifyAPI {
     return data.artists;
   }
 
+  async getMultipleTracks(trackIds: string[]) {
+    const data = await this.request<{ tracks: Track[] }>(
+      `/tracks?ids=${trackIds.join(",")}`,
+    );
+    return data.tracks;
+  }
+
   async searchArtist({
     query,
     limit = 50,

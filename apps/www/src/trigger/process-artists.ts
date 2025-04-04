@@ -41,7 +41,7 @@ export const processArtistsTask = task({
         if (firstArtist && !processedArtistIds.has(firstArtist.id)) {
           processedArtistIds.add(firstArtist.id);
 
-          await createSpotifyArtistEntry(firstArtist.id);
+          await createSpotifyArtistEntry(firstArtist.id, accessToken);
 
           foundRelationships.push({
             artistId: sourceArtistId,

@@ -147,10 +147,11 @@ export const audioFeatures = pgTable(
   ],
 );
 
+// I think this needs changing 😭
 export const artistsStats = pgTable("artists_stats", {
   artistId: text("artist_id")
     .primaryKey()
-    .references(() => artists.id),
+    .references(() => artists.artistId),
   topTracks: jsonb().notNull(),
   topAlbums: jsonb().notNull(),
   lastUpdated: timestamp().notNull().defaultNow(),
@@ -226,6 +227,43 @@ export const userListeningHistory = pgTable("user_listening_history", {
   listeningMinutes: integer("listening_minutes").notNull(),
   peakHour: integer("peak_hour").notNull(),
   totalTracks: integer("total_tracks").notNull(),
+  timesOfDay:
+    jsonb("times_of_day").$type<
+      {
+        hour: number;
+        count: number;
+      }[]
+    >(),
+  heatmapData: jsonb("heatmap_data").$type<{
+    years: number[];
+    maxCount: number;
+    dailyCounts: {
+      date: string;
+      count: number;
+    }[];
+  }>(),
+  weekdayAnalysis: jsonb("weekday_analysis").$type<{
+    weekdayAvg: number;
+    weekendAvg: number;
+    dayCountMap: {
+      [key: string]: number;
+    };
+    mostActiveDay: string;
+  }>(),
+  longestSession: jsonb("longest_session").$type<{
+    duration: number;
+    sessionEnd: string;
+    sessionStart: string;
+    totalSessions: number;
+    durationMinutes: number;
+    session_insights: {
+      total_tracks: number;
+      total_artists: number;
+      unique_tracks: number;
+      unique_artists: number;
+    };
+  }>(),
+  travelerMessage: varchar("traveler_message", { length: 255 }),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
@@ -239,8 +277,9 @@ export const userTopArtists = pgTable("user_top_artists", {
     .references(() => userListeningHistory.id, {
       onDelete: "cascade",
     }),
-  artistName: text("artist_name").notNull(),
-  artistId: text("artist_id").notNull(),
+  artistId: text("artist_id")
+    .notNull()
+    .references(() => artists.artistId),
   rank: integer("rank").notNull(), // #1, #2, etc
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
@@ -255,11 +294,9 @@ export const userTopTracks = pgTable("user_top_tracks", {
     .references(() => userListeningHistory.id, {
       onDelete: "cascade",
     }),
-  trackName: text("track_name").notNull(),
   trackId: text("track_id")
     .notNull()
     .references(() => tracks.trackId),
-  artistName: text("artist_name").notNull(),
   rank: integer("rank").notNull(),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
@@ -288,7 +325,7 @@ export const tokensRelations = relations(tokens, ({ one }) => ({
 
 export const artistsRelations = relations(artists, ({ one, many }) => ({
   stats: one(artistsStats, {
-    fields: [artists.id],
+    fields: [artists.artistId],
     references: [artistsStats.artistId],
   }),
   relatedFrom: many(relatedArtists, { relationName: "artistRelationsFrom" }),
@@ -298,7 +335,7 @@ export const artistsRelations = relations(artists, ({ one, many }) => ({
 export const artistsStatsRelations = relations(artistsStats, ({ one }) => ({
   artist: one(artists, {
     fields: [artistsStats.artistId],
-    references: [artists.id],
+    references: [artists.artistId],
   }),
 }));
 

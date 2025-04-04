@@ -1,8 +1,8 @@
 import { serverClient } from "@/server/trpc/server-client";
 import Link from "next/link";
 import { FaSpotify } from "react-icons/fa";
-import Statistics from "./components/statistics";
-import { StatsCharts } from "./components/stats-chart";
+import Statistics from "./_components/statistics";
+import { StatsCharts } from "./_components/stats-chart";
 
 interface Props {
   params: Promise<{

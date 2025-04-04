@@ -5,9 +5,14 @@ import { getSystemAccessToken } from "@/lib/spotify/system";
 import { db } from "@workspace/database/connection";
 import { artists } from "@workspace/database/schema";
 
-export async function createSpotifyArtistEntry(artistId: string) {
+export async function createSpotifyArtistEntry(
+  artistId: string,
+  access_token?: string,
+) {
   console.log("Creating Spotify Artist Entry for", artistId);
-  const accessToken = await getSystemAccessToken();
+
+  const accessToken = access_token ?? (await getSystemAccessToken());
+
   console.log("access token granted");
 
   const spotifyApi = new SpotifyAPI(accessToken);

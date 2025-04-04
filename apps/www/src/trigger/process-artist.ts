@@ -6,6 +6,7 @@ import { db } from "@workspace/database/connection";
 import pRetry, { AbortError, type Options } from "p-retry";
 import { artists as artistsTable } from "@workspace/database/schema";
 import { sql } from "@workspace/database/drizzle";
+import { SpotifyAPI } from "@/lib/spotify/api";
 
 async function getArtistData({
   artistId,
@@ -41,29 +42,11 @@ export const processArtistTask = task({
   ) => {
     const { artists, accessToken } = payload;
 
-    for (const batch of chunks(artists, 25)) {
-      const spotifyData = await Promise.all(
-        batch.map(async (artist) => {
-          const options: Options = {
-            retries: 3,
-            factor: 2,
-            minTimeout: 3000,
-            maxTimeout: 8000,
-            onFailedAttempt: (error) => {
-              console.log("FAILED");
-              logger.error(
-                `Retry failed ${error.attemptNumber}/${error.retriesLeft}`,
-              );
-            },
-          };
+    const spotifyApi = new SpotifyAPI(accessToken);
 
-          const data = (await pRetry(
-            () => getArtistData({ accessToken, artistId: artist.id }),
-            options,
-          )) as Artist;
-
-          return data;
-        }),
+    for (const batch of chunks(artists, 50)) {
+      const spotifyData = await spotifyApi.getMultipleArtists(
+        batch.map((artist) => artist.id),
       );
 
       const artistsToUpsert = spotifyData
