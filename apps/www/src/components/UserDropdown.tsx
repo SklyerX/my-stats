@@ -37,14 +37,17 @@ export default function UserDropdown({ user }: Props) {
         </div>
         <DropdownMenuSeparator />
         <DropdownMenuItem>
-          <Link href={`/${user.slug}`} className="flex items-center gap-2">
+          <Link
+            href={`/${user.slug}`}
+            className="flex items-center gap-2 w-full"
+          >
             <UserIcon className="size-4" />
             Profile
           </Link>
         </DropdownMenuItem>
         <DropdownMenuSeparator />
         <DropdownMenuItem>
-          <Link href="/settings" className="flex items-center gap-2">
+          <Link href="/settings" className="flex items-center gap-2 w-full">
             <SettingsIcon className="size-4" />
             Settings
           </Link>

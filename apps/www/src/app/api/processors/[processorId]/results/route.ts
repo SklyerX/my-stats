@@ -70,7 +70,10 @@ export async function POST(req: Request, { params }: Props) {
       peakHour: data.peakHour,
       totalTracks: data.totalTracks,
       heatmapData: data.heatmap,
-      longestSession: data.longest_session,
+      longestSession: {
+        ...data.longest_session,
+        duration: Number(data.longest_session.duration),
+      },
       timesOfDay: data.times_of_day,
       weekdayAnalysis: data.weekday_analysis,
       travelerMessage: data.traveler_message,
