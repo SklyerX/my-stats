@@ -27,7 +27,9 @@ export const sessions = pgTable("sessions", {
   id: text("id").primaryKey(),
   userId: text("user_id")
     .notNull()
-    .references(() => users.id),
+    .references(() => users.id, {
+      onDelete: "cascade",
+    }),
   expiresAt: timestamp("expires_at", {
     withTimezone: true,
     mode: "date",
@@ -183,7 +185,9 @@ export const tokens = pgTable("tokens", {
   id: serial("id").primaryKey(),
   userId: text("user_id")
     .notNull()
-    .references(() => users.id),
+    .references(() => users.id, {
+      onDelete: "cascade",
+    }),
   accessToken: text("access_token").notNull(),
   accessTokenIv: text("token_iv").notNull(),
   accessTokenTag: text("access_token_tag").notNull(),
@@ -206,7 +210,9 @@ export const userExports = pgTable("user_exports", {
     .$defaultFn(() => nanoid()),
   userId: text("user_id")
     .notNull()
-    .references(() => users.id),
+    .references(() => users.id, {
+      onDelete: "cascade",
+    }),
   uploadDate: timestamp("upload_date", {
     mode: "date",
   }).defaultNow(),
@@ -218,7 +224,9 @@ export const userListeningHistory = pgTable("user_listening_history", {
   id: serial("id").primaryKey(),
   userId: text("user_id")
     .notNull()
-    .references(() => users.id),
+    .references(() => users.id, {
+      onDelete: "cascade",
+    }),
   totalMs: bigint("total_ms", { mode: "number" }).notNull().default(0),
   timeMessage: varchar("time_message", { length: 255 }).notNull(),
   uniqueArtists: integer("unique_artists").notNull(),
@@ -271,7 +279,9 @@ export const userTopArtists = pgTable("user_top_artists", {
   id: serial("id").primaryKey(),
   userId: text("user_id")
     .notNull()
-    .references(() => users.id),
+    .references(() => users.id, {
+      onDelete: "cascade",
+    }),
   historyId: integer("history_id")
     .notNull()
     .references(() => userListeningHistory.id, {
@@ -288,7 +298,9 @@ export const userTopTracks = pgTable("user_top_tracks", {
   id: serial("id").primaryKey(),
   userId: text("user_id")
     .notNull()
-    .references(() => users.id),
+    .references(() => users.id, {
+      onDelete: "cascade",
+    }),
   historyId: integer("history_id")
     .notNull()
     .references(() => userListeningHistory.id, {
