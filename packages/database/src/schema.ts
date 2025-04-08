@@ -4,6 +4,7 @@ import { jsonb } from "drizzle-orm/pg-core";
 import { boolean } from "drizzle-orm/pg-core";
 import { pgEnum } from "drizzle-orm/pg-core";
 import { smallint } from "drizzle-orm/pg-core";
+import { uniqueIndex } from "drizzle-orm/pg-core";
 import { bigint } from "drizzle-orm/pg-core";
 import { index } from "drizzle-orm/pg-core";
 import { numeric } from "drizzle-orm/pg-core";
@@ -315,6 +316,27 @@ export const userTopTracks = pgTable("user_top_tracks", {
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
+export const integrations = pgTable(
+  "integrations",
+  {
+    id: serial("id").primaryKey(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => users.id),
+    platformName: varchar("platform_name", { length: 50 }).notNull(),
+    platformUserId: varchar("platform_user_id", { length: 255 }),
+    platformUsername: varchar("platform_username", { length: 255 }),
+    profileUrl: varchar("profile_url", { length: 512 }),
+    avatarUrl: varchar("avatar_url", { length: 512 }),
+    createdAt: timestamp("created_at").defaultNow(),
+    enabled: boolean("enabled").default(true),
+    metadata: jsonb("metadata"),
+  },
+  (idx) => [
+    uniqueIndex("unique_user_platform").on(idx.userId, idx.platformName),
+  ],
+);
+
 export const userRelations = relations(users, ({ one, many }) => ({
   sessions: many(sessions),
   tokens: one(tokens, {
@@ -454,6 +476,7 @@ export type AlbumArtists = typeof albumsArtists.$inferSelect;
 export type UserListeningHistory = typeof userListeningHistory.$inferSelect;
 export type UserTopArtist = typeof userTopArtists.$inferSelect;
 export type UserTopTrack = typeof userTopTracks.$inferSelect;
+export type Integrations = typeof integrations.$inferSelect;
 
 export function lower(col: AnyPgColumn): SQL {
   return sql`lower(${col})`;
