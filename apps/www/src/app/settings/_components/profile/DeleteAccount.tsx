@@ -14,7 +14,7 @@ import { Button } from "@workspace/ui/components/button";
 import { Trash2 } from "lucide-react";
 import { Input } from "@workspace/ui/components/input";
 import { toast } from "@workspace/ui/components/sonner";
-import { deleteAccountAction } from "../_actions/delete-account";
+import { deleteAccountAction } from "../../_actions/delete-account";
 
 const CONFIRM_TEXT = "delete my account";
 

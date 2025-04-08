@@ -9,7 +9,7 @@ import { Button } from "@workspace/ui/components/button";
 
 import { useProfileFormStore } from "@/stores/profile-form";
 import { toast } from "@workspace/ui/components/sonner";
-import { updateProfile } from "../_actions/update-profile";
+import { updateProfile } from "../../_actions/update-profile";
 import DeleteAccount from "./DeleteAccount";
 
 interface Props {

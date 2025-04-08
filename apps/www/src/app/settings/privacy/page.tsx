@@ -1,11 +1,11 @@
 import { getCurrentSession } from "@/auth/session";
 import { redirect } from "next/navigation";
-import ProfileSettings from "./_components/profile/ProfileSettings";
+import PrivacySettings from "../_components/privacy/PrivacySettings";
 
-export default async function Page() {
+export default async function Privacy() {
   const { user } = await getCurrentSession();
 
   if (!user) redirect("/login");
 
-  return <ProfileSettings user={user} />;
+  return <PrivacySettings initialFlags={user.flags} />;
 }

@@ -3,6 +3,7 @@ import { type AnyPgColumn, unique, varchar } from "drizzle-orm/pg-core";
 import { jsonb } from "drizzle-orm/pg-core";
 import { boolean } from "drizzle-orm/pg-core";
 import { pgEnum } from "drizzle-orm/pg-core";
+import { smallint } from "drizzle-orm/pg-core";
 import { bigint } from "drizzle-orm/pg-core";
 import { index } from "drizzle-orm/pg-core";
 import { numeric } from "drizzle-orm/pg-core";
@@ -21,6 +22,7 @@ export const users = pgTable("user", {
   bio: varchar("bio", { length: 150 }),
   email: text().notNull().unique(),
   image: text("image"),
+  flags: smallint("flags").notNull(),
 });
 
 export const sessions = pgTable("sessions", {
