@@ -13,5 +13,16 @@ export default async function Page() {
     where: (fields, { eq }) => eq(fields.userId, user.id),
   });
 
-  return <PlatformConnector integrations={integrations} />;
+  return (
+    <div>
+      <div className="mb-5">
+        <h3 className="text-3xl font-semibold mb-2">Integrations</h3>
+        <p className="text-muted-foreground">
+          Connect other social platforms and for a touch of personalization ro
+          to flex them on your profile!
+        </p>
+      </div>
+      <PlatformConnector integrations={integrations} />
+    </div>
+  );
 }
