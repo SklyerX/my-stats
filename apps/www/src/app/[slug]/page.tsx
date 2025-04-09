@@ -40,6 +40,7 @@ export default async function UserPage({ params, searchParams }: Props) {
   const [listeningHistory, topTracksResult, topArtistsResult] = await db.batch([
     db.query.userListeningHistory.findFirst({
       where: (fields, { eq }) => eq(fields.userId, data.user.id),
+      orderBy: (fields, { asc }) => asc(fields.createdAt),
     }),
     db
       .select({

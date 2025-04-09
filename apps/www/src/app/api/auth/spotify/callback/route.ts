@@ -112,6 +112,7 @@ export async function GET(request: Request): Promise<Response> {
     const [user] = await db
       .insert(users)
       .values({
+        flags: 0,
         email: spotifyUserEmail,
         slug: spotifyUserName.toLowerCase(),
         spotifyId: spotifyUserId,

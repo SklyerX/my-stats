@@ -10,6 +10,7 @@ import { db } from "@workspace/database/connection";
 import { userExports } from "@workspace/database/schema";
 import { getCurrentSession } from "@/auth/session";
 import { logger } from "@/lib/logger";
+import { revalidatePath } from "next/cache";
 
 const MAX_FILE_SIZE = convert("40mb", "b");
 
@@ -103,6 +104,8 @@ export async function POST(req: Request) {
     request.headers.set("x-api-key", env.APP_AUTH_KEY);
 
     await fetch(request);
+
+    revalidatePath("/settings/import");
 
     return new Response(
       JSON.stringify({
