@@ -5,6 +5,7 @@ import { db } from "@workspace/database/connection";
 import {
   type Artists,
   type Track,
+  User,
   artists,
   tracks,
   userTopArtists,
@@ -72,6 +73,11 @@ export default async function UserPage({ params, searchParams }: Props) {
     artists: artistsData,
   };
 
+  const authedUser = {
+    id: session.user?.id,
+    flags: session.user?.flags,
+  };
+
   return (
     <div>
       <UserProfile slug={slug} session={session} user={data.user} />
@@ -79,6 +85,7 @@ export default async function UserPage({ params, searchParams }: Props) {
         initialStats={data.stats}
         recentlyPlayed={recentlyPlayed}
         user={data.user}
+        authedUser={authedUser}
         listeningHistory={result}
       />
     </div>

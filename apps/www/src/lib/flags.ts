@@ -94,3 +94,7 @@ export const PRIVACY_OPTIONS = [
     description: "Your top artists from the imported listening history",
   },
 ];
+
+export function hasPrivacyFlag(userFlags: number, flag: number) {
+  return Boolean(userFlags & flag);
+}

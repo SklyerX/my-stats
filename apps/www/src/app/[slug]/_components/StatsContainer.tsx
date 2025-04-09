@@ -15,7 +15,6 @@ import { TimeRangeSelector } from "@/components/stats/TimeRangeSelector";
 import type {
   Artists,
   Track,
-  User,
   UserListeningHistory,
 } from "@workspace/database/schema";
 import { convertTo12Hour } from "@/lib/utils";
@@ -41,6 +40,10 @@ import ListeningSessionStats from "./sections/ListeningSessionStats";
 import StreamingStats from "./sections/StreamingStats";
 import TopHistoryItems from "./sections/TopHistoryItems";
 import HeatmapSection from "./sections/HeatmapSection";
+import { hasPrivacyFlag, PRIVACY_FLAGS } from "@/lib/flags";
+import { TIME_RANGE_TEXT } from "@/lib/constants";
+import { EyeOff } from "lucide-react";
+import EmptyPlaceholder from "./EmptyPlaceholder";
 
 interface Props {
   initialStats: Awaited<
@@ -51,14 +54,17 @@ interface Props {
   >;
   user: Pick<
     Awaited<ReturnType<(typeof serverClient)["user"]["top"]>>["user"],
-    "id" | "name"
+    "id" | "name" | "flags"
   >;
   listeningHistory?: {
     history: UserListeningHistory | undefined;
     tracks?: Track[] | undefined;
     artists?: Artists[] | undefined;
   } | null;
-  authedUser?: User;
+  authedUser?: {
+    id?: string;
+    flags?: number;
+  };
 }
 
 const f = new Intl.NumberFormat("en-US", {
@@ -122,6 +128,14 @@ export default function StatsContainer({
     }
   }, [data?.stats]);
 
+  const isOwnProfile = authedUser?.id === user.id;
+
+  const isFeatureVisible = (privacyFlag: number) => {
+    const isPublic = user.flags && hasPrivacyFlag(user.flags, privacyFlag);
+
+    return isPublic || isOwnProfile;
+  };
+
   return (
     <div className="space-y-8 mt-10 p-5 w-full">
       <Tabs
@@ -132,64 +146,67 @@ export default function StatsContainer({
           className={cn(
             "flex flex-col sm:flex-row justify-between relative z-10",
             {
-              "justify-end": !listeningHistory?.history,
+              "justify-end":
+                !listeningHistory?.history ||
+                !isFeatureVisible(PRIVACY_FLAGS.STREAMING_STATS),
             },
           )}
         >
-          {listeningHistory?.history && (
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-5">
-              <div className="flex flex-col">
-                <p className="font-semibold text-xl">
-                  {f.format(listeningHistory.history.totalTracks)}
-                </p>
-                <span className="text-muted-foreground font-medium text-xl">
-                  Streams
-                </span>
+          {isFeatureVisible(PRIVACY_FLAGS.STREAMING_STATS) &&
+            listeningHistory?.history && (
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-5">
+                <div className="flex flex-col">
+                  <p className="font-semibold text-xl">
+                    {f.format(listeningHistory.history.totalTracks)}
+                  </p>
+                  <span className="text-muted-foreground font-medium text-xl">
+                    Streams
+                  </span>
+                </div>
+                <div className="flex flex-col">
+                  <p className="font-semibold text-xl">
+                    {f.format(listeningHistory.history.listeningHours)}
+                  </p>
+                  <span className="text-muted-foreground font-medium text-xl">
+                    Hours Streamed
+                  </span>
+                </div>
+                <div className="flex flex-col">
+                  <p className="font-semibold text-xl">
+                    {f.format(
+                      Math.round(listeningHistory.history.listeningHours * 60),
+                    )}
+                  </p>
+                  <span className="text-muted-foreground font-medium text-xl">
+                    Minutes Streamed
+                  </span>
+                </div>
+                <div className="flex flex-col">
+                  <p className="font-semibold text-xl">
+                    {f.format(listeningHistory.history.uniqueTracks)}
+                  </p>
+                  <span className="text-muted-foreground font-medium text-xl">
+                    Unique Tracks
+                  </span>
+                </div>
+                <div className="flex flex-col">
+                  <p className="font-semibold text-xl">
+                    {f.format(listeningHistory.history.uniqueArtists)}
+                  </p>
+                  <span className="text-muted-foreground font-medium text-xl">
+                    Unique Artists
+                  </span>
+                </div>
+                <div className="flex flex-col">
+                  <p className="font-semibold text-xl">
+                    {convertTo12Hour(listeningHistory.history.peakHour)}
+                  </p>
+                  <span className="text-muted-foreground font-medium text-xl">
+                    Peak Hour
+                  </span>
+                </div>
               </div>
-              <div className="flex flex-col">
-                <p className="font-semibold text-xl">
-                  {f.format(listeningHistory.history.listeningHours)}
-                </p>
-                <span className="text-muted-foreground font-medium text-xl">
-                  Hours Streamed
-                </span>
-              </div>
-              <div className="flex flex-col">
-                <p className="font-semibold text-xl">
-                  {f.format(
-                    Math.round(listeningHistory.history.listeningHours * 60),
-                  )}
-                </p>
-                <span className="text-muted-foreground font-medium text-xl">
-                  Minutes Streamed
-                </span>
-              </div>
-              <div className="flex flex-col">
-                <p className="font-semibold text-xl">
-                  {f.format(listeningHistory.history.uniqueTracks)}
-                </p>
-                <span className="text-muted-foreground font-medium text-xl">
-                  Unique Tracks
-                </span>
-              </div>
-              <div className="flex flex-col">
-                <p className="font-semibold text-xl">
-                  {f.format(listeningHistory.history.uniqueArtists)}
-                </p>
-                <span className="text-muted-foreground font-medium text-xl">
-                  Unique Artists
-                </span>
-              </div>
-              <div className="flex flex-col">
-                <p className="font-semibold text-xl">
-                  {convertTo12Hour(listeningHistory.history.peakHour)}
-                </p>
-                <span className="text-muted-foreground font-medium text-xl">
-                  Peak Hour
-                </span>
-              </div>
-            </div>
-          )}
+            )}
 
           <div className="flex items-center h-fit gap-5 my-10 sm:my-0">
             <TimeRangeSelector
@@ -230,84 +247,204 @@ export default function StatsContainer({
         </div>
 
         <TabsContent value="stats" className="space-y-6">
-          <Playback userId={user.id} />
+          {isFeatureVisible(PRIVACY_FLAGS.CURRENTLY_PLAYING) && (
+            <Playback userId={user.id} />
+          )}
 
-          <TopGenres
-            genres={stats.genres}
-            displayName={user.name}
-            isLoading={isLoading}
-            timeRange={timeRange}
-          />
+          {isFeatureVisible(PRIVACY_FLAGS.TOP_GENRES) ? (
+            <>
+              {isOwnProfile &&
+                !hasPrivacyFlag(user.flags, PRIVACY_FLAGS.TOP_GENRES) && (
+                  <p className="text-muted-foreground">
+                    This is only visible to you.
+                  </p>
+                )}
 
-          <TopAlbums
-            albums={stats.albums}
-            displayName={user.name}
-            expanded={expanded.albums}
-            isLoading={isLoading}
-            timeRange={timeRange}
-            updateExpanded={(expanded) => updateExpanded("albums", expanded)}
-          />
+              <TopGenres
+                genres={stats.genres}
+                displayName={user.name}
+                isLoading={isLoading}
+                timeRange={timeRange}
+              />
+            </>
+          ) : (
+            <EmptyPlaceholder
+              title="Top Genres"
+              displayName={user.name}
+              timeRange={timeRange}
+            />
+          )}
 
-          <TopTracks
-            tracks={stats.tracks}
-            displayName={user.name}
-            expanded={expanded.tracks}
-            isLoading={isLoading}
-            timeRange={timeRange}
-            updateExpanded={(expanded) => updateExpanded("tracks", expanded)}
-          />
+          {isFeatureVisible(PRIVACY_FLAGS.TOP_ALBUMS) ? (
+            <>
+              {isOwnProfile &&
+                !hasPrivacyFlag(user.flags, PRIVACY_FLAGS.TOP_ALBUMS) && (
+                  <p className="text-muted-foreground">
+                    This is only visible to you.
+                  </p>
+                )}
 
-          <TopArtists
-            artists={stats.artists}
-            displayName={user.name}
-            expanded={expanded.artists}
-            isLoading={isLoading}
-            timeRange={timeRange}
-            updateExpanded={(expanded) => updateExpanded("artists", expanded)}
-          />
+              <TopAlbums
+                albums={stats.albums}
+                displayName={user.name}
+                expanded={expanded.albums}
+                isLoading={isLoading}
+                timeRange={timeRange}
+                updateExpanded={(expanded) =>
+                  updateExpanded("albums", expanded)
+                }
+              />
+            </>
+          ) : (
+            <EmptyPlaceholder
+              title="Top Albums"
+              displayName={user.name}
+              timeRange={timeRange}
+            />
+          )}
 
-          <RecentlyPlayed
-            displayName={user.name}
-            recentlyPlayed={recentlyPlayed}
-          />
+          {isFeatureVisible(PRIVACY_FLAGS.TOP_TRACKS) ? (
+            <>
+              {isOwnProfile &&
+                !hasPrivacyFlag(user.flags, PRIVACY_FLAGS.TOP_TRACKS) && (
+                  <p className="text-muted-foreground">
+                    This is only visible to you.
+                  </p>
+                )}
+
+              <TopTracks
+                tracks={stats.tracks}
+                displayName={user.name}
+                expanded={expanded.tracks}
+                isLoading={isLoading}
+                timeRange={timeRange}
+                updateExpanded={(expanded) =>
+                  updateExpanded("tracks", expanded)
+                }
+              />
+            </>
+          ) : (
+            <EmptyPlaceholder
+              title="Top Tracks"
+              displayName={user.name}
+              timeRange={timeRange}
+            />
+          )}
+
+          {isFeatureVisible(PRIVACY_FLAGS.TOP_ARTISTS) ? (
+            <>
+              {isOwnProfile &&
+                !hasPrivacyFlag(user.flags, PRIVACY_FLAGS.TOP_ARTISTS) && (
+                  <p className="text-muted-foreground">
+                    This is only visible to you.
+                  </p>
+                )}
+
+              <TopArtists
+                artists={stats.artists}
+                displayName={user.name}
+                expanded={expanded.artists}
+                isLoading={isLoading}
+                timeRange={timeRange}
+                updateExpanded={(expanded) =>
+                  updateExpanded("artists", expanded)
+                }
+              />
+            </>
+          ) : (
+            <EmptyPlaceholder
+              title="Top Artists"
+              displayName={user.name}
+              timeRange={timeRange}
+            />
+          )}
+
+          {isFeatureVisible(PRIVACY_FLAGS.RECENTLY_PLAYED) ? (
+            <>
+              {isOwnProfile &&
+                !hasPrivacyFlag(user.flags, PRIVACY_FLAGS.RECENTLY_PLAYED) && (
+                  <p className="text-muted-foreground">
+                    This is only visible to you.
+                  </p>
+                )}
+
+              <RecentlyPlayed
+                displayName={user.name}
+                recentlyPlayed={recentlyPlayed}
+              />
+            </>
+          ) : (
+            <EmptyPlaceholder
+              title="Recently Played"
+              displayName={user.name}
+              timeRange={timeRange}
+            />
+          )}
         </TabsContent>
         <TabsContent value="history">
           <h3 className="text-2xl font-semibold mt-10">
             {user.name}'s Music Profile
           </h3>
-          <p className="text-lg text-zinc-400 mb-6 mt-2">
-            {listeningHistory?.history?.timeMessage},{" "}
-            {listeningHistory?.history?.travelerMessage}
-          </p>
-
-          {listeningHistory?.history?.heatmapData && (
-            <HeatmapSection data={listeningHistory.history.heatmapData} />
-          )}
-
-          {listeningHistory?.history?.longestSession && (
+          {isFeatureVisible(PRIVACY_FLAGS.PERSONALIZED_MESSAGES) && (
             <>
-              <ListeningSessionStats
-                session={listeningHistory.history.longestSession}
-              />
-              <SessionInsightsChart
-                data={listeningHistory.history.longestSession}
-              />
+              {isOwnProfile &&
+                !hasPrivacyFlag(
+                  user.flags,
+                  PRIVACY_FLAGS.PERSONALIZED_MESSAGES,
+                ) && (
+                  <p className="text-muted-foreground">
+                    This is only visible to you.
+                  </p>
+                )}
+
+              <p className="text-lg text-zinc-400 mb-6 mt-2">
+                {listeningHistory?.history?.timeMessage},{" "}
+                {listeningHistory?.history?.travelerMessage}
+              </p>
             </>
           )}
 
-          {listeningHistory?.history?.timesOfDay &&
+          {isFeatureVisible(PRIVACY_FLAGS.PERSONALIZED_MESSAGES) &&
+            listeningHistory?.history?.heatmapData && (
+              <HeatmapSection data={listeningHistory.history.heatmapData} />
+            )}
+
+          {isFeatureVisible(PRIVACY_FLAGS.LONGEST_SESSION) ? (
+            listeningHistory?.history?.longestSession && (
+              <>
+                <ListeningSessionStats
+                  session={listeningHistory.history.longestSession}
+                />
+                <SessionInsightsChart
+                  data={listeningHistory.history.longestSession}
+                />
+              </>
+            )
+          ) : (
+            <EmptyPlaceholder displayName={user.name} noTitle hideHeader />
+          )}
+
+          {isFeatureVisible(PRIVACY_FLAGS.SESSION_ANALYSIS) ? (
+            listeningHistory?.history?.timesOfDay &&
             listeningHistory.history?.weekdayAnalysis && (
               <StreamingStats
                 timesOfDay={listeningHistory?.history?.timesOfDay}
                 weekdayAnalysis={listeningHistory?.history?.weekdayAnalysis}
               />
-            )}
+            )
+          ) : (
+            <EmptyPlaceholder displayName={user.name} noTitle hideHeader />
+          )}
 
           {listeningHistory?.tracks && listeningHistory.artists && (
             <TopHistoryItems
               displayName={user.name}
               tracks={listeningHistory?.tracks}
               artists={listeningHistory?.artists}
+              visible={{
+                artists: isFeatureVisible(PRIVACY_FLAGS.TOP_ARTISTS_IMPORTED),
+                tracks: isFeatureVisible(PRIVACY_FLAGS.TOP_TRACKS_IMPORTED),
+              }}
             />
           )}
         </TabsContent>

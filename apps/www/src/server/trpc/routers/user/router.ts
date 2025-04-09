@@ -1,4 +1,3 @@
-import { TopStatsAnalyzer } from "@/lib/spotify/top-stats-analyzer";
 import { publicProcedure, router } from "../../root";
 import { type RecentlyPlayed, topStatsSchema } from "./types";
 import { getValidSpotifyToken } from "@/lib/spotify/tokens";
@@ -10,15 +9,16 @@ import { headers } from "next/headers";
 import type { InternalTopUserStats } from "@/types/response";
 import { z } from "zod";
 import {
+  type StatsResponse,
   TIME_RANGES,
   type PlaybackResponse,
   type RecentlyPlayedResponse,
 } from "@/types/spotify";
-import { processArtistTask } from "@/trigger/process-artist";
 import { SpotifyAPI } from "@/lib/spotify/api";
-import { logger } from "@/lib/logger";
 import { protectedProcedure } from "../../middleware/auth";
 import { getUserTopStats } from "@/lib/spotify/user-stats-service";
+import { hasPrivacyFlag, PRIVACY_FLAGS } from "@/lib/flags";
+import { getCurrentSession } from "@/auth/session";
 
 export const userRouter = router({
   top: publicProcedure
@@ -69,10 +69,40 @@ export const userRouter = router({
 
         const result = await getUserTopStats(
           existingUser,
-          input.time_range ?? "short_term",
-          input.limit ?? 50,
-          input.offset ?? 0,
+          time_range,
+          limit ?? 50,
+          offset ?? 50,
         );
+
+        const { user } = await getCurrentSession();
+
+        const privacySettings = {
+          tracks:
+            existingUser.flags &&
+            hasPrivacyFlag(existingUser.flags, PRIVACY_FLAGS.TOP_TRACKS),
+          albums:
+            existingUser.flags &&
+            hasPrivacyFlag(existingUser.flags, PRIVACY_FLAGS.TOP_ALBUMS),
+          artists:
+            existingUser.flags &&
+            hasPrivacyFlag(existingUser.flags, PRIVACY_FLAGS.TOP_ARTISTS),
+          genres:
+            existingUser.flags &&
+            hasPrivacyFlag(existingUser.flags, PRIVACY_FLAGS.TOP_GENRES),
+        };
+
+        const filterStatsByPrivacy = (statsData: StatsResponse) => ({
+          tracks: privacySettings.tracks ? [] : statsData.tracks,
+          albums: privacySettings.albums ? [] : statsData.albums,
+          artists: privacySettings.artists ? [] : statsData.artists,
+          genres: privacySettings.genres ? [] : statsData.genres,
+        });
+
+        if (!user || user.id !== existingUser.id)
+          return {
+            stats: filterStatsByPrivacy(result.stats),
+            user: result.user,
+          };
 
         return result;
       } catch (err) {
@@ -105,6 +135,15 @@ export const userRouter = router({
           message: "User not found",
         });
       }
+
+      const { user } = await getCurrentSession();
+
+      const isPrivacyEnabled = hasPrivacyFlag(
+        existingUser.flags,
+        PRIVACY_FLAGS.RECENTLY_PLAYED,
+      );
+
+      if (isPrivacyEnabled && (!user || user.id !== existingUser.id)) return [];
 
       const cacheKey = CACHE_KEYS.recentlyPlayed(existingUser.spotifyId);
       const cached = (await redis.get(cacheKey)) as RecentlyPlayed[];
