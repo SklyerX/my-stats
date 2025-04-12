@@ -7,7 +7,11 @@ import { spotify } from "@/auth/oauth";
 import { cookies } from "next/headers";
 
 import { db } from "@workspace/database/connection";
-import { users, tokens as tokensTable } from "@workspace/database/schema";
+import {
+  users,
+  tokens as tokensTable,
+  integrations,
+} from "@workspace/database/schema";
 import { ObjectParser } from "@pilcrowjs/object-parser";
 import { encrypt } from "@/lib/encryption";
 import { eq } from "@workspace/database/drizzle";
@@ -109,6 +113,11 @@ export async function GET(request: Request): Promise<Response> {
 
     console.log("no, creating user");
 
+    const spotifyImage =
+      spotifyUserImages.length > 0
+        ? spotifyUserImages.at(0)?.url
+        : `https://api.dicebear.com/9.x/glass/svg?seed=${spotifyUserName}`;
+
     const [user] = await db
       .insert(users)
       .values({
@@ -117,12 +126,21 @@ export async function GET(request: Request): Promise<Response> {
         slug: spotifyUserName.toLowerCase(),
         spotifyId: spotifyUserId,
         username: spotifyUserName,
-        image:
-          spotifyUserImages.length > 0
-            ? spotifyUserImages.at(0)?.url
-            : `https://api.dicebear.com/9.x/glass/svg?seed=${spotifyUserName}`,
+        image: spotifyImage,
       })
       .returning();
+
+    if (!user) return new Response("Failed to create user");
+
+    await db.insert(integrations).values({
+      platformName: "spotify",
+      userId: user.id,
+      avatarUrl: spotifyImage,
+      enabled: true,
+      platformUsername: spotifyUserName,
+      platformUserId: spotifyUserId,
+      profileUrl: `https://open.spotify.com/user/${spotifyUserId}`,
+    });
 
     console.log("user created");
 

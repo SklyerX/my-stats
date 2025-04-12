@@ -25,6 +25,7 @@ export async function getUserTopStats(
         name: user.username,
         bio: user.bio,
         id: user.id,
+        flags: user.flags,
       },
     } as InternalTopUserStats;
   }

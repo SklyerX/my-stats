@@ -40,7 +40,7 @@ import ListeningSessionStats from "./sections/ListeningSessionStats";
 import StreamingStats from "./sections/StreamingStats";
 import TopHistoryItems from "./sections/TopHistoryItems";
 import HeatmapSection from "./sections/HeatmapSection";
-import { hasPrivacyFlag, PRIVACY_FLAGS } from "@/lib/flags";
+import { hasPrivacyFlag, PRIVACY_FLAGS, PRIVACY_OPTIONS } from "@/lib/flags";
 import { TIME_RANGE_TEXT } from "@/lib/constants";
 import { EyeOff } from "lucide-react";
 import EmptyPlaceholder from "./EmptyPlaceholder";
@@ -131,7 +131,17 @@ export default function StatsContainer({
   const isOwnProfile = authedUser?.id === user.id;
 
   const isFeatureVisible = (privacyFlag: number) => {
-    const isPublic = user.flags && hasPrivacyFlag(user.flags, privacyFlag);
+    console.log("USER", user.flags);
+
+    console.log("HAS FLAG?", hasPrivacyFlag(user.flags, privacyFlag));
+    console.log(
+      "FUNC?",
+      user.flags && !hasPrivacyFlag(user.flags, privacyFlag),
+    );
+
+    const isPublic = !hasPrivacyFlag(user.flags, privacyFlag);
+
+    console.log("SHOULD SHOW?", isPublic || isOwnProfile);
 
     return isPublic || isOwnProfile;
   };

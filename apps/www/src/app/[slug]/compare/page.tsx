@@ -12,23 +12,17 @@ interface Props {
 }
 
 export default async function Compare({ params, searchParams }: Props) {
-  const { slug } = await params;
-  const timeRange = (await searchParams).timeRange;
+  // const { slug } = await params;
+  // const timeRange = (await searchParams).timeRange;
 
-  const { user, session } = await getCurrentSession();
+  // const { user, session } = await getCurrentSession();
 
-  if (!user || !session) redirect(`/${slug}`);
+  // if (!user || !session) redirect(`/${slug}`);
 
-  const comparison = await serverClient.user.compare({
-    slug,
-    timeRange: timeRange as TIME_RANGE,
-  });
+  // const comparison = await serverClient.user.compare({
+  //   slug,
+  //   timeRange: timeRange as TIME_RANGE,
+  // });
 
-  return (
-    <div>
-      <pre>
-        <code>{JSON.stringify(comparison, null, 2)}</code>
-      </pre>
-    </div>
-  );
+  return <div>coming soon</div>;
 }
