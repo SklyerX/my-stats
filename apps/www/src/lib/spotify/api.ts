@@ -4,6 +4,7 @@ import type {
   ArtistAlbumsResponse,
   ArtistTopTracksResponse,
   PlaybackResponse,
+  RecentlyPlayedResponse,
   SearchContentParams,
   SearchContentResponse,
   Track,
@@ -117,5 +118,15 @@ export class SpotifyAPI {
     if (error) return null;
 
     return data;
+  }
+
+  async getRecentlyPlayed() {
+    const { data, error } = await tryCatch(
+      this.request<RecentlyPlayedResponse>("/me/player/recently-played"),
+    );
+
+    if (error) return null;
+
+    return data.items;
   }
 }
