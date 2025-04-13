@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Providers } from "../../components/providers";
 import Navbar from "@/components/Navbar";
 import { getCurrentSession } from "@/auth/session";
+import { Fragment } from "react";
 
 export const metadata: Metadata = {
   title: "Create Next App",
@@ -16,11 +17,11 @@ export default async function MainAppLayout({
   const { user } = await getCurrentSession();
 
   return (
-    <Providers>
+    <Fragment>
       <Navbar user={user} />
       <main className="container mx-auto max-w-5xl mt-20 pb-10 px-2">
         {children}
       </main>
-    </Providers>
+    </Fragment>
   );
 }
