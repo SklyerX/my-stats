@@ -1,10 +1,12 @@
 import { getCurrentSession } from "@/auth/session";
 import { AppSidebar } from "@/components/app-sidebar";
+import { getUrl } from "@/lib/utils";
 import {
   SidebarInset,
   SidebarProvider,
   SidebarTrigger,
 } from "@workspace/ui/components/sidebar";
+import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import React, { type ReactNode } from "react";
 
@@ -13,10 +15,13 @@ export default async function DeveloperLayout({
 }: { children: ReactNode }) {
   const { session, user } = await getCurrentSession();
 
-  if (!session || !user) redirect("http://stats.skylerx.ir:3000/login");
+  if (!session || !user) redirect(`${getUrl()}/login`);
+
+  const cookieStore = await cookies();
+  const defaultOpen = cookieStore.get("sidebar_state")?.value === "true";
 
   return (
-    <SidebarProvider>
+    <SidebarProvider defaultOpen={defaultOpen}>
       <AppSidebar user={user} />
       <SidebarInset>
         <header className="flex h-16 shrink-0 items-center gap-2">
@@ -24,7 +29,7 @@ export default async function DeveloperLayout({
             <SidebarTrigger className="-ml-1" />
           </div>
         </header>
-        <div className="p-4 pt-0">{children}</div>
+        <main className="p-4 pt-0">{children}</main>
       </SidebarInset>
     </SidebarProvider>
   );

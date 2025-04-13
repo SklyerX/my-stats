@@ -4,6 +4,7 @@ import { jsonb } from "drizzle-orm/pg-core";
 import { boolean } from "drizzle-orm/pg-core";
 import { pgEnum } from "drizzle-orm/pg-core";
 import { smallint } from "drizzle-orm/pg-core";
+import { uuid } from "drizzle-orm/pg-core";
 import { uniqueIndex } from "drizzle-orm/pg-core";
 import { bigint } from "drizzle-orm/pg-core";
 import { index } from "drizzle-orm/pg-core";
@@ -335,6 +336,25 @@ export const integrations = pgTable(
   (idx) => [
     uniqueIndex("unique_user_platform").on(idx.userId, idx.platformName),
   ],
+);
+
+// DEVS
+
+export const apiKeys = pgTable(
+  "api_keys",
+  {
+    id: text("id")
+      .$defaultFn(() => nanoid())
+      .primaryKey(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => users.id),
+    name: varchar("name", { length: 50 }).notNull(),
+    secretHash: text("secret_hash").notNull(),
+    createdAt: timestamp("created_at").defaultNow(),
+    lastUsedAt: timestamp(),
+  },
+  (idx) => [uniqueIndex("unique_api_key_secret_hash").on(idx.secretHash)],
 );
 
 export const userRelations = relations(users, ({ one, many }) => ({
