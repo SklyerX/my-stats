@@ -3,6 +3,9 @@ import { redis } from "@/lib/redis";
 import { SpotifyAPI } from "@/lib/spotify/api";
 import { getSystemAccessToken } from "@/lib/spotify/system";
 import { logger, task, timeout } from "@trigger.dev/sdk/v3";
+import { db } from "@workspace/database/connection";
+import { sql } from "@workspace/database/drizzle";
+import { artistsStats } from "@workspace/database/schema";
 
 interface AlbumScores {
   score: number;
@@ -77,6 +80,24 @@ export const processArtistStatsTask = task({
     await redis.set(cacheKey, stats, {
       ex: 7 * 24 * 60 * 60,
     });
+
+    await db
+      .insert(artistsStats)
+      .values({
+        topAlbums: scoredAlbums,
+        topTracks: topTracks,
+        artistId: artistId,
+        lastUpdated: new Date(),
+      })
+      .onConflictDoUpdate({
+        target: artistsStats.artistId,
+        set: {
+          topAlbums: sql`excluded.top_albums`,
+          topTracks: sql`excluded.top_tracks`,
+          lastUpdated: sql`excluded.last_updated`,
+        },
+      });
+
     await redis.del(processingCacheKey);
   },
 });

@@ -4,7 +4,6 @@ import { jsonb } from "drizzle-orm/pg-core";
 import { boolean } from "drizzle-orm/pg-core";
 import { pgEnum } from "drizzle-orm/pg-core";
 import { smallint } from "drizzle-orm/pg-core";
-import { uuid } from "drizzle-orm/pg-core";
 import { uniqueIndex } from "drizzle-orm/pg-core";
 import { bigint } from "drizzle-orm/pg-core";
 import { index } from "drizzle-orm/pg-core";
@@ -158,9 +157,9 @@ export const artistsStats = pgTable("artists_stats", {
   artistId: text("artist_id")
     .primaryKey()
     .references(() => artists.artistId),
-  topTracks: jsonb().notNull(),
-  topAlbums: jsonb().notNull(),
-  lastUpdated: timestamp().notNull().defaultNow(),
+  topTracks: jsonb("top_tracks").notNull(),
+  topAlbums: jsonb("top_albums").notNull(),
+  lastUpdated: timestamp("last_updated").notNull().defaultNow(),
 });
 
 export const relatedArtists = pgTable(
@@ -425,12 +424,12 @@ export const trackArtistsRelations = relations(trackArtists, ({ one }) => ({
 export const relatedArtistsRelations = relations(relatedArtists, ({ one }) => ({
   artist: one(artists, {
     fields: [relatedArtists.artistId],
-    references: [artists.id],
+    references: [artists.artistId],
     relationName: "artistRelationsFrom",
   }),
   relatedArtist: one(artists, {
     fields: [relatedArtists.relatedArtistId],
-    references: [artists.id],
+    references: [artists.artistId],
     relationName: "artistRelationsTo",
   }),
 }));
@@ -489,6 +488,7 @@ export const userTopTracksRelations = relations(userTopTracks, ({ one }) => ({
 export type User = typeof users.$inferSelect;
 export type Session = typeof sessions.$inferSelect;
 export type Artists = typeof artists.$inferSelect;
+export type ArtistsStats = typeof artistsStats.$inferSelect;
 export type RelatedArtists = typeof relatedArtists.$inferSelect;
 export type Track = typeof tracks.$inferSelect;
 export type AudioFeature = typeof audioFeatures.$inferSelect;
