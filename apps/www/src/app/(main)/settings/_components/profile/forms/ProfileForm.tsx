@@ -5,6 +5,7 @@ import type { User } from "@workspace/database/schema";
 import { z } from "zod";
 import { useProfileFormStore } from "@/stores/profile-form";
 import { useState } from "react";
+import { getUrl } from "@/lib/utils";
 
 const schema = z.object({
   slug: z
@@ -72,7 +73,7 @@ export default function ProfileForm({ user }: Props) {
         <Label htmlFor="slug">Slug</Label>
         <div className="flex rounded-md shadow-xs">
           <span className="border-input bg-background text-muted-foreground -z-10 inline-flex items-center rounded-s-md border px-3 text-sm">
-            http://localhost:3000/
+            {getUrl()}
           </span>
           <Input
             id="slug"

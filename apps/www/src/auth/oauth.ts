@@ -6,5 +6,5 @@ import { env } from "../env";
 export const spotify = new Spotify(
   env.SPOTIFY_CLIENT_ID,
   env.SPOTIFY_CLIENT_SECRET,
-  "http://localhost:3000/api/auth/spotify/callback",
+  "http://stats.skylerx.ir:3000/api/auth/spotify/callback",
 );

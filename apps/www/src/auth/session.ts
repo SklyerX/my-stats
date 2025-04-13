@@ -94,6 +94,7 @@ export async function setSessionTokenCookie(
   cookieStore.set("session", token, {
     httpOnly: true,
     sameSite: "lax",
+    domain: ".skylerx.ir",
     secure: process.env.NODE_ENV === "production",
     expires: expiresAt,
     path: "/",
@@ -105,6 +106,7 @@ export async function deleteSessionTokenCookie(): Promise<void> {
   cookieStore.set("session", "", {
     httpOnly: true,
     sameSite: "lax",
+    domain: ".skylerx.ir",
     secure: process.env.NODE_ENV === "production",
     maxAge: 0,
     path: "/",

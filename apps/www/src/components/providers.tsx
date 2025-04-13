@@ -7,21 +7,13 @@ import { ThemeProvider as NextThemesProvider } from "next-themes";
 import { useState, type ReactNode } from "react";
 import { NuqsAdapter } from "nuqs/adapters/next/app";
 import { Toaster } from "@workspace/ui/components/sonner";
-
-function getUrl() {
-  const base = (() => {
-    if (typeof window !== "undefined") return "";
-    if (process.env.VERCEL_URL) return `https://${process.env.VERCEL_URL}`;
-    return "http://localhost:3000";
-  })();
-  return `${base}/api/trpc`;
-}
+import { getUrl } from "@/lib/utils";
 
 export function Providers({ children }: { children: ReactNode }) {
   const [queryClient] = useState(() => new QueryClient());
   const [trpcClient] = useState(() =>
     trpc.createClient({
-      links: [httpBatchLink({ url: getUrl() })],
+      links: [httpBatchLink({ url: `${getUrl()}/api/trpc` })],
     }),
   );
 

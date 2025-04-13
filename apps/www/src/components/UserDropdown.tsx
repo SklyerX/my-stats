@@ -6,11 +6,12 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@workspace/ui/components/dropdown-menu";
-import Image from "next/image";
 import Link from "next/link";
 
 import { SettingsIcon, UserIcon } from "lucide-react";
+import { FiTerminal } from "react-icons/fi";
 import UserLogoutButton from "./UserLogoutButton";
+import { getUrl } from "@/lib/utils";
 
 interface Props {
   user: Pick<User, "email" | "slug" | "image" | "username">;
@@ -43,6 +44,16 @@ export default function UserDropdown({ user }: Props) {
           >
             <UserIcon className="size-4" />
             Profile
+          </Link>
+        </DropdownMenuItem>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem>
+          <Link
+            href={getUrl("developer")}
+            className="flex items-center gap-2 w-full"
+          >
+            <FiTerminal className="size-4" />
+            Developer Portal
           </Link>
         </DropdownMenuItem>
         <DropdownMenuSeparator />

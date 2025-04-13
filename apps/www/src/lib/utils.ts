@@ -44,3 +44,29 @@ export function convertTo12Hour(hour: number) {
 
   return `${hour12} ${period}`;
 }
+
+export function getUrl(type = "main"): string {
+  const isDev = process.env.NODE_ENV === "development";
+  const port = isDev ? ":3000" : "";
+
+  // For production
+  if (!isDev) {
+    if (type === "developer") {
+      return "https://developer.stats.skylerx.ir";
+    }
+    return "https://stats.skylerx.ir";
+  }
+
+  // For development
+  if (type === "developer") {
+    // Developer portal ALWAYS uses the domain, never localhost
+    return `http://developer.stats.skylerx.ir${port}`;
+  }
+
+  // Main site uses localhost by default in dev, unless FORCE_DOMAINS is set
+  if (process.env.FORCE_DOMAINS) {
+    return `http://stats.skylerx.ir${port}`;
+  }
+
+  return `http://localhost${port}`;
+}

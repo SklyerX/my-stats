@@ -1,5 +1,6 @@
 import { getCurrentSession } from "@/auth/session";
 import { env } from "@/env";
+import { getUrl } from "@/lib/utils";
 import { redirect } from "next/navigation";
 
 interface Props {
@@ -24,7 +25,7 @@ export async function GET(req: Request, { params }: Props) {
         url.searchParams.append("scope", "identify");
         url.searchParams.append(
           "redirect_uri",
-          "http://localhost:3000/api/connections/discord/callback",
+          `${getUrl()}/api/connections/discord/callback`,
         );
 
         redirect(url.toString());
@@ -36,7 +37,7 @@ export async function GET(req: Request, { params }: Props) {
         url.searchParams.append("client_id", env.GITHUB_CLIENT_ID);
         url.searchParams.append(
           "redirect_uri",
-          "http://localhost:3000/api/connections/github/callback",
+          `${getUrl()}/api/connections/github/callback`,
         );
         redirect(url.toString());
       }
@@ -49,7 +50,7 @@ export async function GET(req: Request, { params }: Props) {
         url.searchParams.append("response_type", "code");
         url.searchParams.append(
           "redirect_uri",
-          "http://localhost:3000/api/connections/twitch/callback",
+          `${getUrl()}/api/connections/twitch/callback`,
         );
         redirect(url.toString());
       }
@@ -63,7 +64,7 @@ export async function GET(req: Request, { params }: Props) {
         url.searchParams.append("scope", "user:read:email");
         url.searchParams.append(
           "redirect_uri",
-          "http://localhost:3000/api/connections/twitch/callback",
+          `${getUrl()}/api/connections/twitch/callback`,
         );
         redirect(url.toString());
       }
