@@ -1,5 +1,7 @@
+import { cookies, headers } from "next/headers";
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
+import { isValidAPIKey } from "./lib/api-key";
 
 export const config = {
   matcher: ["/((?!api/|_next/|public/|favicon.ico|globals.css).*)"],
@@ -18,9 +20,32 @@ export default async function middleware(req: NextRequest) {
   }
 
   if (hostname.includes("api.stats.skylerx.ir")) {
-    return NextResponse.rewrite(
-      new URL(`/api.stats.skylerx.ir${path}${queryString}`, req.url),
-    );
+    const apiKey = (await headers()).get("x-api-key");
+
+    if (!apiKey) {
+      return NextResponse.json(
+        { error: "Authentication required" },
+        { status: 401 },
+      );
+    }
+
+    try {
+      const isValid = await isValidAPIKey(apiKey);
+
+      if (!isValid) {
+        return NextResponse.json({ error: "Invalid API Key" }, { status: 401 });
+      }
+
+      return NextResponse.rewrite(
+        new URL(`/api.stats.skylerx.ir${path}${queryString}`, req.url),
+      );
+    } catch (err) {
+      console.error("Auth error:", err);
+      return NextResponse.json(
+        { error: "Authentication error" },
+        { status: 500 },
+      );
+    }
   }
 
   if (

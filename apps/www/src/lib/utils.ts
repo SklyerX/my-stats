@@ -54,6 +54,9 @@ export function getUrl(type = "main"): string {
     if (type === "developer") {
       return "https://developer.stats.skylerx.ir";
     }
+    if (type === "api") {
+      return "https://api.stats.skylerx.ir";
+    }
     return "https://stats.skylerx.ir";
   }
 
@@ -61,6 +64,10 @@ export function getUrl(type = "main"): string {
   if (type === "developer") {
     // Developer portal ALWAYS uses the domain, never localhost
     return `http://developer.stats.skylerx.ir${port}`;
+  }
+
+  if (type === "api") {
+    return `http://api.stats.skylerx.ir${port}`;
   }
 
   // Main site uses localhost by default in dev, unless FORCE_DOMAINS is set

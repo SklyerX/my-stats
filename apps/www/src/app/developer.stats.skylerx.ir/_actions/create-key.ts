@@ -29,5 +29,5 @@ export async function createKeyAction(name: string) {
 
   revalidatePath("/keys");
 
-  return secretHash;
+  return apiKey;
 }

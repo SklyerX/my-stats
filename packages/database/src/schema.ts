@@ -363,6 +363,7 @@ export const userRelations = relations(users, ({ one, many }) => ({
     fields: [users.id],
     references: [tokens.userId],
   }),
+  history: many(userListeningHistory),
 }));
 
 export const sessionsRelations = relations(sessions, ({ one }) => ({
