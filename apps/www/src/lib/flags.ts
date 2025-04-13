@@ -98,3 +98,7 @@ export const PRIVACY_OPTIONS = [
 export function hasPrivacyFlag(userFlags: number, flag: number) {
   return Boolean(userFlags & flag);
 }
+
+export function isDataVisible(userFlags: number, flag: number) {
+  return !Boolean(userFlags & flag);
+}

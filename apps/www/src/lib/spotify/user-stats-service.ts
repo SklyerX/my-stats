@@ -12,7 +12,7 @@ import type {
   Track,
 } from "@/types/spotify";
 import type { User } from "@workspace/database/schema";
-import { hasPrivacyFlag, PRIVACY_FLAGS } from "../flags";
+import { isDataVisible, PRIVACY_FLAGS } from "../flags";
 
 export async function getUserTopStats(
   user: User,
@@ -89,36 +89,36 @@ export async function getUserTopStatsWithFieldsAndPrivacy(
   );
 
   const privacySettings = {
-    tracks: Boolean(flags && hasPrivacyFlag(flags, PRIVACY_FLAGS.TOP_TRACKS)),
-    albums: Boolean(flags && hasPrivacyFlag(flags, PRIVACY_FLAGS.TOP_ALBUMS)),
-    artists: Boolean(flags && hasPrivacyFlag(flags, PRIVACY_FLAGS.TOP_ARTISTS)),
-    genres: Boolean(flags && hasPrivacyFlag(flags, PRIVACY_FLAGS.TOP_GENRES)),
+    tracks: isDataVisible(flags, PRIVACY_FLAGS.TOP_TRACKS),
+    albums: isDataVisible(flags, PRIVACY_FLAGS.TOP_ALBUMS),
+    artists: isDataVisible(flags, PRIVACY_FLAGS.TOP_ARTISTS),
+    genres: isDataVisible(flags, PRIVACY_FLAGS.TOP_GENRES),
   };
 
   const filteredStats: Partial<StatsResponse> = {};
 
   if (fields.includes("tracks")) {
     filteredStats.tracks = privacySettings.tracks
-      ? []
-      : (buildResponse("tracks", result.stats.tracks) ?? []);
+      ? (buildResponse("tracks", result.stats.tracks) ?? [])
+      : [];
   }
 
   if (fields.includes("albums")) {
     filteredStats.albums = privacySettings.albums
-      ? []
-      : (buildResponse("albums", result.stats.albums) ?? []);
+      ? (buildResponse("albums", result.stats.albums) ?? [])
+      : [];
   }
 
   if (fields.includes("artists")) {
     filteredStats.artists = privacySettings.artists
-      ? []
-      : (buildResponse("artists", result.stats.artists) ?? []);
+      ? (buildResponse("artists", result.stats.artists) ?? [])
+      : [];
   }
 
   if (fields.includes("genres")) {
     filteredStats.genres = privacySettings.genres
-      ? []
-      : (result.stats.genres ?? []);
+      ? (result.stats.genres ?? [])
+      : [];
   }
 
   return filteredStats;
