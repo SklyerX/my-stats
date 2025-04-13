@@ -17,6 +17,12 @@ export default async function middleware(req: NextRequest) {
     );
   }
 
+  if (hostname.includes("api.stats.skylerx.ir")) {
+    return NextResponse.rewrite(
+      new URL(`/api.stats.skylerx.ir${path}${queryString}`, req.url),
+    );
+  }
+
   if (
     hostname.includes("stats.skylerx.ir") ||
     hostname.includes("localhost") ||
@@ -25,11 +31,13 @@ export default async function middleware(req: NextRequest) {
     return null;
   }
 
-  if (
-    req.headers.get("connection")?.includes("Upgrade") &&
-    req.headers.get("upgrade") === "websocket"
-  ) {
-    return undefined; // Let Next.js handle WebSocket connections
+  if (process.env.NODE_ENV === "development") {
+    if (
+      req.headers.get("connection")?.includes("Upgrade") &&
+      req.headers.get("upgrade") === "websocket"
+    ) {
+      return undefined; // Let Next.js handle WebSocket connections
+    }
   }
 
   return null;
