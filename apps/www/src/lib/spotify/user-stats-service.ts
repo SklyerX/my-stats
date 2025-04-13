@@ -95,46 +95,95 @@ export async function getUserTopStatsWithFieldsAndPrivacy(
     genres: Boolean(flags && hasPrivacyFlag(flags, PRIVACY_FLAGS.TOP_GENRES)),
   };
 
-  const filteredStats: Partial<
-    StatsResponse & {
-      tracksError?: string;
-      albumsError?: string;
-      artistsError?: string;
-      genresError?: string;
-    }
-  > = {};
+  const filteredStats: Partial<StatsResponse> = {};
 
   if (fields.includes("tracks")) {
-    if (privacySettings.tracks) {
-      filteredStats.tracksError = "This user is not sharing their tracks";
-    } else {
-      filteredStats.tracks = result.stats.tracks;
-    }
+    filteredStats.tracks = privacySettings.tracks
+      ? []
+      : (buildResponse("tracks", result.stats.tracks) ?? []);
   }
 
   if (fields.includes("albums")) {
-    if (privacySettings.albums) {
-      filteredStats.albumsError = "This user is not sharing their albums";
-    } else {
-      filteredStats.albums = result.stats.albums;
-    }
+    filteredStats.albums = privacySettings.albums
+      ? []
+      : (buildResponse("albums", result.stats.albums) ?? []);
   }
 
   if (fields.includes("artists")) {
-    if (privacySettings.artists) {
-      filteredStats.artistsError = "This user is not sharing their artists";
-    } else {
-      filteredStats.artists = result.stats.artists;
-    }
+    filteredStats.artists = privacySettings.artists
+      ? []
+      : (buildResponse("artists", result.stats.artists) ?? []);
   }
 
   if (fields.includes("genres")) {
-    if (privacySettings.genres) {
-      filteredStats.genresError = "This user is not sharing their genres";
-    } else {
-      filteredStats.genres = result.stats.genres;
-    }
+    filteredStats.genres = privacySettings.genres
+      ? []
+      : (result.stats.genres ?? []);
   }
 
   return filteredStats;
 }
+
+const buildResponse = <T extends Artist | Track | Album>(
+  type: "artists" | "tracks" | "albums",
+  data: T | T[] | null,
+): T[] | null => {
+  if (!data) {
+    return null;
+  }
+
+  if (Array.isArray(data)) {
+    return data.map((item) => buildResponseSingle(type, item) as unknown as T);
+  }
+
+  return [buildResponseSingle(type, data) as unknown as T];
+};
+
+const buildResponseSingle = (
+  type: "artists" | "tracks" | "albums",
+  data: Artist | Track | Album,
+) => {
+  if (type === "tracks") {
+    const trackData = data as Track;
+    return {
+      name: trackData.name,
+      album_name: trackData.album.name,
+      cover_image: trackData.album.images.at(0)?.url,
+      album_id: trackData.album.id,
+      track_id: trackData.id,
+      popularity: trackData.popularity,
+      artists: trackData.artists.map((artist) => ({
+        artistId: artist.id,
+        name: artist.name,
+      })),
+    };
+  }
+
+  if (type === "artists") {
+    const artistData = data as Artist;
+    return {
+      name: artistData.name,
+      cover_image: artistData.images.at(0)?.url,
+      artist_id: artistData.id,
+      popularity: artistData.popularity,
+      followers: artistData.followers.total,
+      genres: artistData.genres,
+    };
+  }
+
+  if (type === "albums") {
+    const albumData = data as Album;
+    return {
+      album_title: albumData.name,
+      cover_image: albumData.images.at(0)?.url,
+      release_date: albumData.release_date,
+      total_tracks: albumData.total_tracks,
+      artists: albumData.artists.map((artist) => ({
+        id: artist.id,
+        name: artist.name,
+      })),
+    };
+  }
+
+  return null;
+};
