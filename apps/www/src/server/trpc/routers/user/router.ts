@@ -146,9 +146,11 @@ export const userRouter = router({
       if (isPrivacyEnabled && (!user || user.id !== existingUser.id)) return [];
 
       const cacheKey = CACHE_KEYS.recentlyPlayed(existingUser.spotifyId);
-      const cached = (await redis.get(cacheKey)) as RecentlyPlayed[];
+      const cached = (await redis.get(cacheKey)) as {
+        orderedItems: RecentlyPlayed[];
+      };
 
-      if (cached) return cached;
+      if (cached) return cached.orderedItems;
 
       const accessToken = await getValidSpotifyToken(existingUser.id);
 
@@ -181,9 +183,27 @@ export const userRouter = router({
         playedAt: item.played_at,
       }));
 
-      await redis.set(cacheKey, orderedItems, {
-        ex: CACHE_TIMES.recentlyPlayed,
-      });
+      const consumer_api_data = data.items.map((recentlyPlayed) => ({
+        played_at: recentlyPlayed.played_at,
+        name: recentlyPlayed.track.name,
+        album_name: recentlyPlayed.track.album.name,
+        cover_image: recentlyPlayed.track.album.images.at(0)?.url,
+        album_id: recentlyPlayed.track.album.id,
+        track_id: recentlyPlayed.track.id,
+        popularity: recentlyPlayed.track.popularity,
+        artists: recentlyPlayed.track.artists.map((artist) => ({
+          artistId: artist.id,
+          name: artist.name,
+        })),
+      }));
+
+      await redis.set(
+        cacheKey,
+        { orderedItems, consumer_api_data },
+        {
+          ex: CACHE_TIMES.recentlyPlayed,
+        },
+      );
 
       return orderedItems;
     }),

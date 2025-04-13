@@ -120,9 +120,17 @@ export class SpotifyAPI {
     return data;
   }
 
-  async getRecentlyPlayed() {
+  async getRecentlyPlayed(
+    before: string | null,
+    after: string | null,
+    limit?: number,
+  ) {
     const { data, error } = await tryCatch(
-      this.request<RecentlyPlayedResponse>("/me/player/recently-played"),
+      this.request<RecentlyPlayedResponse>("/me/player/recently-played", {
+        before,
+        after,
+        limit,
+      }),
     );
 
     if (error) return null;

@@ -14,3 +14,17 @@ export type DbTrackType = {
     name: string;
   }[];
 };
+
+export type APIRecentlyPlayedFormat = {
+  played_at: string;
+  name: string;
+  album_name: string;
+  cover_image: string;
+  album_id: string;
+  track_id: string;
+  popularity: number;
+  artists: {
+    artistId: string;
+    name: string;
+  }[];
+};
