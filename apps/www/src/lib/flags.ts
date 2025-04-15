@@ -13,6 +13,7 @@ export const PRIVACY_FLAGS = {
   SESSION_ANALYSIS: 1 << 11,
   TOP_TRACKS_IMPORTED: 1 << 12,
   TOP_ARTISTS_IMPORTED: 1 << 13,
+  MILESTONES: 1 << 14,
 };
 
 export const ALL_FLAGS = Object.values(PRIVACY_FLAGS).reduce(
@@ -92,6 +93,11 @@ export const PRIVACY_OPTIONS = [
     id: PRIVACY_FLAGS.TOP_ARTISTS_IMPORTED,
     name: "Top Artists - Imported",
     description: "Your top artists from the imported listening history",
+  },
+  {
+    id: PRIVACY_FLAGS.MILESTONES,
+    name: "Milestones",
+    description: "Your listening milestones (exposed via API)",
   },
 ];
 

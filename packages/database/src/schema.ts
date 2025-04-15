@@ -545,7 +545,7 @@ export const userTopTracksRelations = relations(userTopTracks, ({ one }) => ({
 
 export const userMilestonesRelations = relations(userMilestones, ({ one }) => ({
   user: one(users, {
-    fields: [userMilestones.id],
+    fields: [userMilestones.userId],
     references: [users.id],
   }),
 }));
