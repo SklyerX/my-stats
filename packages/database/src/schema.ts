@@ -24,6 +24,9 @@ export const users = pgTable("user", {
   email: text().notNull().unique(),
   image: text("image"),
   flags: smallint("flags").notNull(),
+  sync_enabled: boolean("sync_enabled").default(false),
+  sync_id: varchar("sync_id", { length: 255 }),
+  lastSyncedAt: timestamp("last_synced_at"),
 });
 
 export const sessions = pgTable("sessions", {
@@ -337,6 +340,60 @@ export const integrations = pgTable(
   ],
 );
 
+export const syncedPlays = pgTable("sync_plays", {
+  id: serial("id").primaryKey(),
+  userId: text("user_id")
+    .notNull()
+    .references(() => users.id),
+  trackId: text("track_id").notNull(),
+  trackName: varchar("track_name", { length: 255 }).notNull(),
+  artistId: text("artist_id").notNull(),
+  artist: varchar("artist", { length: 255 }).notNull(),
+  playedAt: timestamp("played_at").notNull(),
+  durationMs: integer("duration_ms").notNull(),
+  albumId: text("album_id").notNull(),
+  albumName: text("album_name").notNull(),
+  syncedAt: timestamp("synced_at").defaultNow(),
+});
+
+const entityTypeEnum = pgEnum("entity_type", [
+  "artist",
+  "track",
+  "artist",
+  "album",
+  "global",
+]);
+const milestoneTypeEnum = pgEnum("milestone_type", [
+  "minutes",
+  "plays",
+  "days_streaked",
+  "unique_tracks",
+  "unique_artists",
+  "listening_days",
+]);
+
+export const userMilestones = pgTable("user_milestones", {
+  id: serial("id").primaryKey(),
+  userId: text("user_id")
+    .notNull()
+    .references(() => users.id),
+  entityType: entityTypeEnum().notNull(),
+  entityId: text("entity_id").notNull(),
+  milestoneType: milestoneTypeEnum().notNull(),
+  milestoneValue: integer("milestone_value").notNull(),
+  milestoneName: text("milestone_name").notNull(),
+  reachedAt: timestamp("reached_at").notNull(),
+});
+
+export const milestoneThresholds = pgTable("milestone_thresholds", {
+  id: serial("id").primaryKey(),
+  entityType: entityTypeEnum().notNull(),
+  milestoneType: milestoneTypeEnum().notNull(),
+  thresholdValue: integer("threshold_value").notNull(),
+  milestoneName: varchar("name", { length: 255 }).notNull(),
+  active: boolean("active").notNull(),
+});
+
 // DEVS
 
 export const apiKeys = pgTable(
@@ -363,6 +420,7 @@ export const userRelations = relations(users, ({ one, many }) => ({
     references: [tokens.userId],
   }),
   history: many(userListeningHistory),
+  milestones: many(userMilestones),
 }));
 
 export const sessionsRelations = relations(sessions, ({ one }) => ({
@@ -485,6 +543,13 @@ export const userTopTracksRelations = relations(userTopTracks, ({ one }) => ({
   }),
 }));
 
+export const userMilestonesRelations = relations(userMilestones, ({ one }) => ({
+  user: one(users, {
+    fields: [userMilestones.id],
+    references: [users.id],
+  }),
+}));
+
 export type User = typeof users.$inferSelect;
 export type Session = typeof sessions.$inferSelect;
 export type Artists = typeof artists.$inferSelect;
@@ -498,6 +563,9 @@ export type UserListeningHistory = typeof userListeningHistory.$inferSelect;
 export type UserTopArtist = typeof userTopArtists.$inferSelect;
 export type UserTopTrack = typeof userTopTracks.$inferSelect;
 export type Integrations = typeof integrations.$inferSelect;
+export type SyncedPlays = typeof syncedPlays.$inferSelect;
+export type UserMilestones = typeof userMilestones.$inferSelect;
+export type MilestoneThresholds = typeof milestoneThresholds.$inferSelect;
 
 export function lower(col: AnyPgColumn): SQL {
   return sql`lower(${col})`;

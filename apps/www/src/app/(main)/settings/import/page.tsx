@@ -5,6 +5,7 @@ import { db } from "@workspace/database/connection";
 import { getCurrentSession } from "@/auth/session";
 import { redirect } from "next/navigation";
 import { cn } from "@workspace/ui/lib/utils";
+import SyncSpotifyStreams from "../_components/import/SyncSpotifyStreams";
 
 const f = new Intl.DateTimeFormat();
 
@@ -20,6 +21,7 @@ export default async function Page() {
 
   return (
     <div>
+      <SyncSpotifyStreams syncEnabled={user.sync_enabled || false} />
       <div className="mb-5 space-y-2">
         <h3 className="text-3xl font-semibold">Import</h3>
         <p className="text-muted-foreground">

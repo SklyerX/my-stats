@@ -14,18 +14,18 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@neondatabase/serverless": "^0.10.4",
+    "@neondatabase/serverless": "^1.0.0",
     "@workspace/tsconfig": "workspace:*",
-    "dotenv": "^16.4.7",
-    "drizzle-orm": "^0.39.2",
+    "dotenv": "^16.5.0",
+    "drizzle-orm": "^0.42.0",
     "server-only": "^0.0.1"
   },
   "devDependencies": {
-    "@types/node": "^22.13.1",
-    "drizzle-kit": "^0.30.4",
-    "nanoid": "^5.0.9",
-    "tsx": "^4.19.2",
-    "typescript": "^5.7.3"
+    "@types/node": "^22.14.1",
+    "drizzle-kit": "^0.31.0",
+    "nanoid": "^5.1.5",
+    "tsx": "^4.19.3",
+    "typescript": "^5.8.3"
   },
   "exports": {
     "./schema": "./src/schema.ts",

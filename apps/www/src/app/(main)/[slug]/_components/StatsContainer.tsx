@@ -175,7 +175,7 @@ export default function StatsContainer({
                 </div>
                 <div className="flex flex-col">
                   <p className="font-semibold text-xl">
-                    {f.format(listeningHistory.history.listeningHours)}
+                    {msToHours(listeningHistory.history.totalMs)}
                   </p>
                   <span className="text-muted-foreground font-medium text-xl">
                     Hours Streamed
@@ -184,7 +184,7 @@ export default function StatsContainer({
                 <div className="flex flex-col">
                   <p className="font-semibold text-xl">
                     {f.format(
-                      Math.round(listeningHistory.history.listeningHours * 60),
+                      Math.round(msToMinutes(listeningHistory.history.totalMs)),
                     )}
                   </p>
                   <span className="text-muted-foreground font-medium text-xl">
@@ -263,12 +263,11 @@ export default function StatsContainer({
 
           {isFeatureVisible(PRIVACY_FLAGS.TOP_GENRES) ? (
             <>
-              {isOwnProfile &&
-                !hasPrivacyFlag(user.flags, PRIVACY_FLAGS.TOP_GENRES) && (
-                  <p className="text-muted-foreground">
-                    This is only visible to you.
-                  </p>
-                )}
+              {isOwnProfile && !isFeatureVisible(PRIVACY_FLAGS.TOP_GENRES) && (
+                <p className="text-muted-foreground">
+                  This is only visible to you.
+                </p>
+              )}
 
               <TopGenres
                 genres={stats.genres}
@@ -287,12 +286,11 @@ export default function StatsContainer({
 
           {isFeatureVisible(PRIVACY_FLAGS.TOP_ALBUMS) ? (
             <>
-              {isOwnProfile &&
-                !hasPrivacyFlag(user.flags, PRIVACY_FLAGS.TOP_ALBUMS) && (
-                  <p className="text-muted-foreground">
-                    This is only visible to you.
-                  </p>
-                )}
+              {isOwnProfile && !isFeatureVisible(PRIVACY_FLAGS.TOP_ALBUMS) && (
+                <p className="text-muted-foreground">
+                  This is only visible to you.
+                </p>
+              )}
 
               <TopAlbums
                 albums={stats.albums}
@@ -315,12 +313,11 @@ export default function StatsContainer({
 
           {isFeatureVisible(PRIVACY_FLAGS.TOP_TRACKS) ? (
             <>
-              {isOwnProfile &&
-                !hasPrivacyFlag(user.flags, PRIVACY_FLAGS.TOP_TRACKS) && (
-                  <p className="text-muted-foreground">
-                    This is only visible to you.
-                  </p>
-                )}
+              {isOwnProfile && !isFeatureVisible(PRIVACY_FLAGS.TOP_TRACKS) && (
+                <p className="text-muted-foreground">
+                  This is only visible to you.
+                </p>
+              )}
 
               <TopTracks
                 tracks={stats.tracks}
@@ -343,12 +340,11 @@ export default function StatsContainer({
 
           {isFeatureVisible(PRIVACY_FLAGS.TOP_ARTISTS) ? (
             <>
-              {isOwnProfile &&
-                !hasPrivacyFlag(user.flags, PRIVACY_FLAGS.TOP_ARTISTS) && (
-                  <p className="text-muted-foreground">
-                    This is only visible to you.
-                  </p>
-                )}
+              {isOwnProfile && !isFeatureVisible(PRIVACY_FLAGS.TOP_ARTISTS) && (
+                <p className="text-muted-foreground">
+                  This is only visible to you.
+                </p>
+              )}
 
               <TopArtists
                 artists={stats.artists}
@@ -372,7 +368,7 @@ export default function StatsContainer({
           {isFeatureVisible(PRIVACY_FLAGS.RECENTLY_PLAYED) ? (
             <>
               {isOwnProfile &&
-                !hasPrivacyFlag(user.flags, PRIVACY_FLAGS.RECENTLY_PLAYED) && (
+                !isFeatureVisible(PRIVACY_FLAGS.RECENTLY_PLAYED) && (
                   <p className="text-muted-foreground">
                     This is only visible to you.
                   </p>
@@ -398,10 +394,7 @@ export default function StatsContainer({
           {isFeatureVisible(PRIVACY_FLAGS.PERSONALIZED_MESSAGES) && (
             <>
               {isOwnProfile &&
-                !hasPrivacyFlag(
-                  user.flags,
-                  PRIVACY_FLAGS.PERSONALIZED_MESSAGES,
-                ) && (
+                !isFeatureVisible(PRIVACY_FLAGS.PERSONALIZED_MESSAGES) && (
                   <p className="text-muted-foreground">
                     This is only visible to you.
                   </p>
@@ -461,4 +454,12 @@ export default function StatsContainer({
       </Tabs>
     </div>
   );
+}
+
+function msToMinutes(ms: number) {
+  return ms / (1000 * 60);
+}
+
+function msToHours(ms: number) {
+  return (ms / (1000 * 60 * 60)).toFixed(0);
 }

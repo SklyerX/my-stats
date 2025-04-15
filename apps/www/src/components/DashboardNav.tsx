@@ -20,7 +20,7 @@ const paths = [
   },
   {
     href: "/settings/import",
-    name: "Import",
+    name: "Import & Syncing",
   },
 ];
 
