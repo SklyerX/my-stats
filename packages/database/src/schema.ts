@@ -325,7 +325,9 @@ export const integrations = pgTable(
     id: serial("id").primaryKey(),
     userId: text("user_id")
       .notNull()
-      .references(() => users.id),
+      .references(() => users.id, {
+        onDelete: "cascade",
+      }),
     platformName: varchar("platform_name", { length: 50 }).notNull(),
     platformUserId: varchar("platform_user_id", { length: 255 }),
     platformUsername: varchar("platform_username", { length: 255 }),
@@ -344,7 +346,9 @@ export const syncedPlays = pgTable("sync_plays", {
   id: serial("id").primaryKey(),
   userId: text("user_id")
     .notNull()
-    .references(() => users.id),
+    .references(() => users.id, {
+      onDelete: "cascade",
+    }),
   trackId: text("track_id").notNull(),
   trackName: varchar("track_name", { length: 255 }).notNull(),
   artistId: text("artist_id").notNull(),
@@ -376,7 +380,9 @@ export const userMilestones = pgTable("user_milestones", {
   id: serial("id").primaryKey(),
   userId: text("user_id")
     .notNull()
-    .references(() => users.id),
+    .references(() => users.id, {
+      onDelete: "cascade",
+    }),
   entityType: entityTypeEnum().notNull(),
   entityId: text("entity_id").notNull(),
   milestoneType: milestoneTypeEnum().notNull(),
@@ -404,7 +410,9 @@ export const apiKeys = pgTable(
       .primaryKey(),
     userId: text("user_id")
       .notNull()
-      .references(() => users.id),
+      .references(() => users.id, {
+        onDelete: "cascade",
+      }),
     name: varchar("name", { length: 50 }).notNull(),
     secretHash: text("secret_hash").notNull(),
     createdAt: timestamp("created_at").defaultNow(),
@@ -412,6 +420,47 @@ export const apiKeys = pgTable(
   },
   (idx) => [uniqueIndex("unique_api_key_secret_hash").on(idx.secretHash)],
 );
+
+export const webhooks = pgTable("webhooks", {
+  id: serial("id").primaryKey(),
+  userId: text("user_id")
+    .notNull()
+    .references(() => users.id, {
+      onDelete: "cascade",
+    }),
+  name: varchar("name", { length: 50 }).notNull(),
+  webhookSecret: jsonb("webhook_secret")
+    .$type<{
+      iv: string;
+      tag: string;
+      data: string;
+    }>()
+    .notNull(),
+  url: text("url").notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const statusEnum = pgEnum("status_enum", ["success", "failed"]);
+
+export const webhookLogs = pgTable("webhook_logs", {
+  id: serial("id").primaryKey(),
+  webhookId: integer("webhook_id")
+    .references(() => webhooks.id, {
+      onDelete: "cascade",
+    })
+    .notNull(),
+  status: statusEnum().notNull(),
+  metadata: jsonb("metadata").$type<{
+    for: string;
+    value: string;
+    event: string;
+    user: string;
+    displayName: string;
+  }>(),
+  responseData: jsonb("response_data"),
+  requestData: jsonb("request_data"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
 
 export const userRelations = relations(users, ({ one, many }) => ({
   sessions: many(sessions),
@@ -421,6 +470,10 @@ export const userRelations = relations(users, ({ one, many }) => ({
   }),
   history: many(userListeningHistory),
   milestones: many(userMilestones),
+  webhook: one(webhooks, {
+    fields: [users.id],
+    references: [webhooks.userId],
+  }),
 }));
 
 export const sessionsRelations = relations(sessions, ({ one }) => ({
@@ -550,6 +603,21 @@ export const userMilestonesRelations = relations(userMilestones, ({ one }) => ({
   }),
 }));
 
+export const webhookUserRelations = relations(webhooks, ({ one, many }) => ({
+  user: one(users, {
+    fields: [webhooks.userId],
+    references: [users.id],
+  }),
+  logs: many(webhookLogs),
+}));
+
+export const webhookLogsRelations = relations(webhookLogs, ({ one }) => ({
+  webhook: one(webhooks, {
+    fields: [webhookLogs.webhookId],
+    references: [webhooks.id],
+  }),
+}));
+
 export type User = typeof users.$inferSelect;
 export type Session = typeof sessions.$inferSelect;
 export type Artists = typeof artists.$inferSelect;
@@ -566,6 +634,8 @@ export type Integrations = typeof integrations.$inferSelect;
 export type SyncedPlays = typeof syncedPlays.$inferSelect;
 export type UserMilestones = typeof userMilestones.$inferSelect;
 export type MilestoneThresholds = typeof milestoneThresholds.$inferSelect;
+export type Webhooks = typeof webhooks.$inferSelect;
+export type WebhookLogs = typeof webhookLogs.$inferSelect;
 
 export function lower(col: AnyPgColumn): SQL {
   return sql`lower(${col})`;
