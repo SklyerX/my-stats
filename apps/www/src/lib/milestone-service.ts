@@ -161,5 +161,5 @@ export async function processMultipleMilestones(
     }));
   }
 
-  return 0;
+  return [];
 }

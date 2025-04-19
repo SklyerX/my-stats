@@ -7,10 +7,13 @@ import {
   syncedPlays,
   userListeningHistory,
   users,
+  webhookLogs,
 } from "@workspace/database/schema";
 
 import { schedules } from "@trigger.dev/sdk/v3";
-import { processMilestones } from "@/lib/milestone-service";
+import { processMultipleMilestones } from "@/lib/milestone-service";
+import { sendWebhook } from "@/lib/webhooks";
+import { decrypt } from "@/lib/encryption";
 
 export const syncStreamsTask = schedules.task({
   id: "sync-streams",
@@ -24,6 +27,7 @@ export const syncStreamsTask = schedules.task({
           limit: 1,
           orderBy: (fields, { asc }) => asc(fields.createdAt),
         },
+        webhook: true,
       },
     });
 
@@ -90,22 +94,61 @@ export const syncStreamsTask = schedules.task({
     const currentTotalPlays =
       (existingUser.history.at(0)?.totalTracks || 0) + newPlaysCount;
 
-    const minutesMilestonesCreated = await processMilestones(
-      existingUser.id,
-      "global",
-      "minutes",
-      currentTotalMinutes,
-    );
+    const milestonesCreated = await processMultipleMilestones(existingUser.id, [
+      {
+        currentValue: currentTotalMinutes,
+        entityType: "global",
+        milestoneType: "minutes",
+        entityId: "",
+      },
+      {
+        currentValue: currentTotalPlays,
+        entityType: "global",
+        milestoneType: "plays",
+        entityId: "",
+      },
+    ]);
 
-    const playsMilestonesCreated = await processMilestones(
-      existingUser.id,
-      "global",
-      "plays",
-      currentTotalPlays,
-    );
+    if (existingUser.webhook) {
+      const secret = decrypt(
+        existingUser.webhook.webhook_secret.data,
+        existingUser.webhook.webhook_secret.iv,
+        existingUser.webhook.webhook_secret.tag,
+      );
+
+      const result = await sendWebhook({
+        payload: {
+          eventType: "milestone.achieved",
+          timestamp: new Date().toISOString(),
+          data: {
+            userId: existingUser.id,
+            username: existingUser.username,
+            metadata: {
+              calculatedFrom: "sync-streams",
+            },
+          },
+        },
+        secret,
+        url: existingUser.webhook.url,
+      });
+
+      await db.insert(webhookLogs).values({
+        status: result.isError ? "success" : "failed",
+        webhookId: existingUser.webhook.id,
+        requestData: result.request,
+        responseData: result.response,
+        metadata: {
+          for: "milestone",
+          value: milestonesCreated.length.toString(),
+          event: "milestone.achieved",
+          user: existingUser.username,
+          displayName: `${milestonesCreated.length} Milestone(s) achieved!`,
+        },
+      });
+    }
 
     logger.info(
-      `Sync complete. Created ${minutesMilestonesCreated + playsMilestonesCreated} new milestones.`,
+      `Sync complete. Created ${milestonesCreated.length} new milestones.`,
     );
   },
 });
