@@ -360,14 +360,15 @@ export const syncedPlays = pgTable("sync_plays", {
   syncedAt: timestamp("synced_at").defaultNow(),
 });
 
-const entityTypeEnum = pgEnum("entity_type", [
+export const entityTypeEnum = pgEnum("entity_type", [
   "artist",
   "track",
   "artist",
   "album",
   "global",
 ]);
-const milestoneTypeEnum = pgEnum("milestone_type", [
+
+export const milestoneTypeEnum = pgEnum("milestone_type", [
   "minutes",
   "plays",
   "days_streaked",
@@ -429,7 +430,7 @@ export const webhooks = pgTable("webhooks", {
       onDelete: "cascade",
     }),
   name: varchar("name", { length: 50 }).notNull(),
-  webhookSecret: jsonb("webhook_secret")
+  webhook_secret: jsonb("webhook_secret")
     .$type<{
       iv: string;
       tag: string;
@@ -474,6 +475,7 @@ export const userRelations = relations(users, ({ one, many }) => ({
     fields: [users.id],
     references: [webhooks.userId],
   }),
+  exports: many(userExports),
 }));
 
 export const sessionsRelations = relations(sessions, ({ one }) => ({
@@ -486,6 +488,13 @@ export const sessionsRelations = relations(sessions, ({ one }) => ({
 export const tokensRelations = relations(tokens, ({ one }) => ({
   user: one(users, {
     fields: [tokens.userId],
+    references: [users.id],
+  }),
+}));
+
+export const userExportsRelations = relations(userExports, ({ one }) => ({
+  user: one(users, {
+    fields: [userExports.userId],
     references: [users.id],
   }),
 }));

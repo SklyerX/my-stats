@@ -1,8 +1,14 @@
 import { env } from "@/env";
+import { decrypt } from "@/lib/encryption";
+import {
+  processMilestones,
+  processMultipleMilestones,
+} from "@/lib/milestone-service";
 import { s3 } from "@/lib/s3-client";
 import { SpotifyAPI } from "@/lib/spotify/api";
 import { getSystemAccessToken } from "@/lib/spotify/system";
 import { chunks } from "@/lib/utils";
+import { sendWebhook } from "@/lib/webhooks";
 import type { Artist, Track } from "@/types/spotify";
 import { DeleteObjectCommand } from "@aws-sdk/client-s3";
 import { db } from "@workspace/database/connection";
@@ -16,6 +22,7 @@ import {
   type Track as DBTrack,
   type Artists as DBArtists,
   artists,
+  webhookLogs,
 } from "@workspace/database/schema";
 import { z } from "zod";
 
@@ -50,6 +57,13 @@ export async function POST(req: Request, { params }: Props) {
 
   const existingExport = await db.query.userExports.findFirst({
     where: (fields, { eq }) => eq(fields.exportId, processorId),
+    with: {
+      user: {
+        with: {
+          webhook: true,
+        },
+      },
+    },
   });
 
   if (!existingExport)
@@ -168,12 +182,197 @@ export async function POST(req: Request, { params }: Props) {
       .where(eq(userExports.exportId, processorId)),
   ]);
 
+  await processMultipleMilestones(existingExport.userId, [
+    {
+      currentValue: data.aggregated_data.global_unique_artists,
+      entityId: "",
+      entityType: "artist",
+      milestoneType: "unique_artists",
+    },
+    {
+      currentValue: data.aggregated_data.global_unique_tracks,
+      entityId: "",
+      entityType: "track",
+      milestoneType: "unique_tracks",
+    },
+    {
+      currentValue: data.totalTracks,
+      entityId: "",
+      entityType: "global",
+      milestoneType: "plays",
+    },
+    {
+      currentValue: data.totalMs / (60 * 1000),
+      entityId: "",
+      entityType: "global",
+      milestoneType: "minutes",
+    },
+  ]);
+
+  const artistPlaysId: {
+    spotifyId: string;
+    for: string; // the URI we got this from
+  }[] = [];
+
+  const albumPlaysId: {
+    spotifyId: string;
+    for: string; // the URI we got this from
+  }[] = [];
+
+  for (const chunk of chunks(data.aggregated_data.artist_plays, 50)) {
+    const trackIds = chunk
+      .map((x) => extractIdFromUri(x.uri))
+      .filter((id) => id && id.trim() !== "");
+
+    if (trackIds.length === 0) continue;
+
+    const data = await spotifyApi.getMultipleTracks(trackIds);
+
+    artistPlaysId.push(
+      ...data
+        .filter((track) => track.artists.at(0)?.id !== undefined)
+        .map((track) => ({
+          spotifyId: track.artists.at(0)!.id as string,
+          for: track.id,
+        })),
+    );
+  }
+
+  const totalMilestonesAchieved = [];
+
+  for (const chunk of chunks(data.aggregated_data.album_plays, 50)) {
+    const trackIds = chunk
+      .map((x) => extractIdFromUri(x.track_uri))
+      .filter((id) => id && id.trim() !== "");
+
+    if (trackIds.length === 0) continue;
+
+    const data = await spotifyApi.getMultipleTracks(trackIds);
+
+    albumPlaysId.push(
+      ...data
+        .filter((track) => track.artists.at(0)?.id !== undefined)
+        .map((track) => ({
+          spotifyId: track.artists.at(0)!.id as string,
+          for: track.id,
+        })),
+    );
+  }
+
+  for (const play of data.aggregated_data.artist_plays) {
+    const entity = artistPlaysId.find(
+      (a) => a.for === extractIdFromUri(play.uri),
+    );
+    totalMilestonesAchieved.push(
+      await processMilestones(
+        existingExport.userId,
+        "artist",
+        "plays",
+        play.count,
+        entity?.spotifyId,
+      ),
+    );
+  }
+
+  for (const minutes of data.aggregated_data.artist_minutes) {
+    const entity = artistPlaysId.find(
+      (a) => a.for === extractIdFromUri(minutes.uri),
+    );
+    totalMilestonesAchieved.push(
+      await processMilestones(
+        existingExport.userId,
+        "artist",
+        "minutes",
+        minutes.ms / (60 * 1000),
+        entity?.spotifyId,
+      ),
+    );
+  }
+
+  for (const album of data.aggregated_data.album_plays) {
+    const entity = albumPlaysId.find(
+      (a) => a.for === extractIdFromUri(album.track_uri),
+    );
+    totalMilestonesAchieved.push(
+      await processMilestones(
+        existingExport.userId,
+        "album",
+        "plays",
+        album.count,
+        entity?.spotifyId,
+      ),
+    );
+  }
+
+  for (const track of data.aggregated_data.track_plays) {
+    totalMilestonesAchieved.push(
+      await processMilestones(
+        existingExport.userId,
+        "track",
+        "plays",
+        track.count,
+        extractIdFromUri(track.uri),
+      ),
+    );
+  }
+
   const command = new DeleteObjectCommand({
     Bucket: env.AWS_BUCKET_NAME,
     Key: existingExport.fileName,
   });
 
   await s3.send(command);
+
+  const webhook = existingExport.user.webhook;
+
+  console.log("SENDING WEBHOOK");
+
+  console.log("EXPORT", existingExport);
+
+  if (webhook) {
+    console.log("WEBHOOK FOUND");
+    const secret = decrypt(
+      webhook.webhook_secret.data,
+      webhook.webhook_secret.iv,
+      webhook.webhook_secret.tag,
+    );
+
+    const result = await sendWebhook({
+      payload: {
+        eventType: "milestone.achieved",
+        timestamp: new Date().toISOString(),
+        data: {
+          userId: existingExport.userId,
+          username: existingExport.user.username,
+          milestoneCategories: calculateFinalMilestoneCounts(
+            totalMilestonesAchieved,
+          ),
+          metadata: {
+            dataFile: existingExport.fileName,
+            processTime:
+              (new Date().getTime() - existingExport.uploadDate!.getTime()) /
+              (1000 * 60 * 60 * 24),
+          },
+        },
+      },
+      secret,
+      url: webhook.url,
+    });
+
+    await db.insert(webhookLogs).values({
+      status: result.isError ? "success" : "failed",
+      webhookId: webhook.id,
+      requestData: result.request,
+      responseData: result.response,
+      metadata: {
+        for: "milestone",
+        value: totalMilestonesAchieved.length.toString(),
+        event: "milestone.achieved",
+        user: existingExport.user.username,
+        displayName: `${totalMilestonesAchieved.length} Milestone(s) achieved!`,
+      },
+    });
+  }
 
   return new Response("Success", { status: 201 });
 }
@@ -190,20 +389,6 @@ function mapTracksToDB(tracks: Track[]): Omit<DBTrack, "id" | "updatedAt">[] {
     popularity: track.popularity,
     trackId: track.id,
   }));
-}
-
-async function fetchInBatches<T>(
-  ids: string[],
-  fetchFn: (batchIds: string[]) => Promise<T[]>,
-): Promise<T[]> {
-  const results: T[] = [];
-
-  for (const batch of chunks(ids, 50)) {
-    const data = await fetchFn(batch);
-    results.push(...data);
-  }
-
-  return results;
 }
 
 function mapArtistsToDB(
@@ -286,4 +471,55 @@ const schema = z.object({
       unique_artists: z.number(),
     }),
   }),
+  aggregated_data: z.object({
+    artist_plays: z.array(
+      z.object({
+        count: z.number(),
+        artist: z.string(),
+        uri: z.string(),
+      }),
+    ),
+    artist_minutes: z.array(
+      z.object({
+        name: z.string(),
+        ms: z.number(),
+        uri: z.string(),
+      }),
+    ),
+    global_unique_artists: z.number(),
+    global_unique_tracks: z.number(),
+    album_plays: z.array(
+      z.object({
+        name: z.string(),
+        count: z.number(),
+        track_uri: z.string(),
+      }),
+    ),
+    track_plays: z.array(
+      z.object({
+        count: z.number(),
+        track: z.string(),
+        uri: z.string(),
+        artist: z.string(),
+      }),
+    ),
+  }),
 });
+
+function calculateFinalMilestoneCounts(
+  allResults: Array<{ milestone: string; count: number }[]>,
+) {
+  const totalCounts = new Map();
+
+  for (const item of allResults.flat()) {
+    if (item?.milestone) {
+      const current = totalCounts.get(item.milestone) || 0;
+      totalCounts.set(item.milestone, current + item.count);
+    }
+  }
+
+  return Array.from(totalCounts.entries()).map(([milestone, count]) => ({
+    milestone,
+    count,
+  }));
+}

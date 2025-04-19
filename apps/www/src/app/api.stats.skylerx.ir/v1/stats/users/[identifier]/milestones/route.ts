@@ -1,6 +1,13 @@
 import { hasPrivacyFlag, PRIVACY_FLAGS } from "@/lib/flags";
 import { db } from "@workspace/database/connection";
-import type { UserMilestones } from "@workspace/database/schema";
+import {
+  milestoneTypeEnum,
+  userMilestones,
+  users,
+  type UserMilestones,
+} from "@workspace/database/schema";
+import { eq, or } from "@workspace/database/drizzle";
+import { z } from "zod";
 
 interface Props {
   params: Promise<{
@@ -11,19 +18,41 @@ interface Props {
 export async function GET(req: Request, { params }: Props) {
   const { identifier } = await params;
 
-  try {
-    const existingUser = await db.query.users.findFirst({
-      where: (fields, { eq, or }) =>
-        or(eq(fields.id, identifier), eq(fields.slug, identifier)),
-      with: {
-        milestones: true,
-      },
-    });
+  const url = new URL(req.url);
 
-    if (!existingUser) return new Response("User not found", { status: 404 });
+  const offset = Number.parseInt(url.searchParams.get("offset") || "0");
+  const limit = Number.parseInt(url.searchParams.get("limit") || "50");
+  const milestoneType = url.searchParams.get("milestone_type");
+
+  if (
+    milestoneType &&
+    !z
+      .nativeEnum(
+        Object.fromEntries(
+          milestoneTypeEnum.enumValues.map((value) => [value, value]),
+        ),
+      )
+      .safeParse(milestoneType).success
+  )
+    return new Response("Invalid milestone type", { status: 400 });
+
+  try {
+    const [existingUser] = await db
+      .select({
+        user: users,
+        milestones: userMilestones,
+      })
+      .from(users)
+      .leftJoin(userMilestones, eq(userMilestones.userId, users.id))
+      .where(or(eq(users.id, identifier), eq(users.slug, identifier)))
+      .limit(limit)
+      .offset(offset);
+
+    if (!existingUser?.user)
+      return new Response("User not found", { status: 404 });
 
     const isPrivacyEnabled = hasPrivacyFlag(
-      existingUser.flags,
+      existingUser.user.flags,
       PRIVACY_FLAGS.MILESTONES,
     );
 
@@ -41,7 +70,11 @@ export async function GET(req: Request, { params }: Props) {
         { status: 409 },
       );
 
-    const responseData = buildResponse(existingUser.milestones);
+    const responseData = buildResponse(
+      Array.isArray(existingUser.milestones)
+        ? existingUser.milestones
+        : [existingUser.milestones],
+    );
 
     return new Response(JSON.stringify(responseData), {
       headers: {

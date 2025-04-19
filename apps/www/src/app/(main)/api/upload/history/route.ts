@@ -7,10 +7,13 @@ import {
 import { randomBytes } from "crypto";
 import { env } from "@/env";
 import { db } from "@workspace/database/connection";
-import { userExports } from "@workspace/database/schema";
+import { syncedPlays, userExports, users } from "@workspace/database/schema";
 import { getCurrentSession } from "@/auth/session";
 import { logger } from "@/lib/logger";
 import { revalidatePath } from "next/cache";
+import { eq } from "@workspace/database/drizzle";
+import { schedules } from "@trigger.dev/sdk/v3";
+import { syncStreamsTask } from "@/trigger/sync-steams";
 
 const MAX_FILE_SIZE = convert("40mb", "b");
 
@@ -21,6 +24,16 @@ export async function POST(req: Request) {
   console.log("Session", session);
 
   if (!user || !session) return new Response("Unauthorized", { status: 401 });
+
+  const existingUnprocessedExport = await db.query.userExports.findFirst({
+    where: (fields, { and, eq }) =>
+      and(eq(fields.userId, user.id), eq(fields.status, "queued")),
+  });
+
+  if (existingUnprocessedExport)
+    return new Response("Please wait until your previous upload is processed", {
+      status: 409,
+    });
 
   const formData = await req.formData();
   const file = formData.get("file") as File;
@@ -104,6 +117,35 @@ export async function POST(req: Request) {
     request.headers.set("x-api-key", env.APP_AUTH_KEY);
 
     await fetch(request);
+
+    if (!user.sync_enabled && !user.sync_id) {
+      const schedule = await schedules.create({
+        task: syncStreamsTask.id,
+        cron: "0 * * * *",
+        externalId: user.id,
+        deduplicationKey: `${user.id}-sync`,
+      });
+
+      const now = new Date();
+      const lastSyncedAt = new Date(now);
+
+      /**
+       * We are grabbing the date from two days before Spotify export calculates all listening history until two days
+       * prior to receiving the download link
+       */
+      lastSyncedAt.setDate(now.getDate() - 2);
+
+      await db
+        .update(users)
+        .set({
+          sync_enabled: true,
+          sync_id: schedule.id,
+          lastSyncedAt,
+        })
+        .where(eq(users.id, user.id));
+    }
+
+    await db.delete(syncedPlays).where(eq(syncedPlays.userId, user.id));
 
     revalidatePath("/settings/import");
 

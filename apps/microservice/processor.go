@@ -87,6 +87,27 @@ type WeekdayAnalysis struct {
 	MostActiveDay string               `json:"mostActiveDay"` // Day with most activity
 }
 
+type ArtistMinutes struct {
+	Name string `json:"name"`
+	Ms   int    `json:"ms"`
+	Uri  string `json:"uri"`
+}
+
+type AlbumPlays struct {
+	Name     string `json:"name"`
+	Count    int    `json:"count"`
+	TrackURI string `json:"track_uri"`
+}
+
+type AggregatedData struct {
+	ArtistPlays         []ArtistData    `json:"artist_plays"`
+	ArtistMinutes       []ArtistMinutes `json:"artist_minutes"`
+	GlobalUniqueArtists int             `json:"global_unique_artists"`
+	GlobalUniqueTracks  int             `json:"global_unique_tracks"`
+	AlbumPlays          []AlbumPlays    `json:"album_plays"`
+	TrackPlays          []TrackData     `json:"track_plays"`
+}
+
 type ProcessResult struct {
 	ProcessID       string                 `json:"processId"`
 	TotalMs         int                    `json:"totalMs"`
@@ -103,6 +124,7 @@ type ProcessResult struct {
 	Heatmap         HeatmapData            `json:"heatmap"`
 	WeekdayAnalysis WeekdayAnalysis        `json:"weekday_analysis"`
 	LongestSession  map[string]interface{} `json:"longest_session"`
+	AggregatedData  AggregatedData         `json:"aggregated_data"`
 }
 
 func ProcessListeningHistoryFiles(jsonFilePaths []string, processId string) (*ProcessResult, error) {
@@ -155,6 +177,11 @@ func ProcessListeningHistoryFiles(jsonFilePaths []string, processId string) (*Pr
 	countryCodes := make(map[string]int)
 	platforms := make(map[string]int)
 
+	artistsPlaysMap := make(map[string]ArtistData)
+	artistsMinutesMap := make(map[string]ArtistMinutes)
+	albumPlaysMap := make(map[string]AlbumPlays)
+	trackPlaysMap := make(map[string]TrackData)
+
 	simplifiedTracks := make([]SimplifiedTrack, 0, len(allEntries))
 
 	for i := 0; i < availableWorkers; i++ {
@@ -171,6 +198,10 @@ func ProcessListeningHistoryFiles(jsonFilePaths []string, processId string) (*Pr
 			&tracks,
 			&countryCodes,
 			&platforms,
+			&artistsPlaysMap,
+			&artistsMinutesMap,
+			&albumPlaysMap,
+			&trackPlaysMap,
 		)
 	}
 
@@ -234,18 +265,6 @@ func ProcessListeningHistoryFiles(jsonFilePaths []string, processId string) (*Pr
 
 	listening_stats := calculateListeningStats(simplifiedTracks, totalMs)
 
-	// insights := ListeningInsight{
-	// 	TotalMs:      totalMs,
-	// 	TopArtists:   topArtists,
-	// 	TopTracks:    topTracks,
-	// 	TimeOfDay:    timeOfDayMap,
-	// 	PeakHour:     peakHour,
-	// 	TimeMessage:  timeMessage,
-	// 	CountryCodes: countryCodes,
-	// 	Platforms:    platforms,
-	// 	Stats:        listening_stats,
-	// }
-
 	stats := listening_stats["total_listening_time"].(struct {
 		Minutes int
 		Hours   int
@@ -270,6 +289,50 @@ func ProcessListeningHistoryFiles(jsonFilePaths []string, processId string) (*Pr
 	weekdayAnalysis := getWeekdayAnalysis(simplifiedTracks)
 	longestSession := getLongestSession(simplifiedTracks)
 
+	artistPlays := make([]ArtistData, 0, len(artistsPlaysMap))
+	for _, v := range artistsPlaysMap {
+		if v.Count >= 10 {
+			artistPlays = append(artistPlays, v)
+		}
+	}
+
+	artistMinutes := make([]ArtistMinutes, 0, len(artistsMinutesMap))
+	for _, v := range artistsMinutesMap {
+		if v.Ms >= 1000 {
+			artistMinutes = append(artistMinutes, v)
+		}
+	}
+
+	albumPlays := make([]AlbumPlays, 0, len(albumPlaysMap))
+	for _, v := range albumPlaysMap {
+		if v.Count >= 10 {
+			albumPlays = append(albumPlays, v)
+		}
+	}
+
+	trackPlays := make([]TrackData, 0, len(trackPlaysMap))
+	for _, v := range trackPlaysMap {
+		if v.Count >= 10 {
+			trackPlays = append(trackPlays, v)
+		}
+	}
+
+	sort.Slice(artistPlays, func(i, j int) bool {
+		return artistPlays[i].Count > artistPlays[j].Count
+	})
+
+	sort.Slice(artistMinutes, func(i, j int) bool {
+		return artistMinutes[i].Ms > artistMinutes[j].Ms
+	})
+
+	sort.Slice(albumPlays, func(i, j int) bool {
+		return albumPlays[i].Count > albumPlays[j].Count
+	})
+
+	sort.Slice(trackPlays, func(i, j int) bool {
+		return trackPlays[i].Count > trackPlays[j].Count
+	})
+
 	result := &ProcessResult{
 		ProcessID:       processId,
 		TotalMs:         totalMs,
@@ -289,6 +352,12 @@ func ProcessListeningHistoryFiles(jsonFilePaths []string, processId string) (*Pr
 			Hours:   stats.Hours,
 			Minutes: stats.Minutes,
 		},
+		AggregatedData: AggregatedData{
+			ArtistPlays:   artistPlays,
+			ArtistMinutes: artistMinutes,
+			AlbumPlays:    albumPlays,
+			TrackPlays:    trackPlays,
+		},
 	}
 
 	return result, nil
@@ -306,7 +375,12 @@ func incrementMapValue(m map[string]int, key string) {
 	m[key]++
 }
 
-func worker(entries []Track, wg *sync.WaitGroup, mutex *sync.Mutex, totalMs *int, timeOfDay *map[int]int, simplifiedTracks *[]SimplifiedTrack, artists *map[string]*ArtistData, tracks *map[string]*TrackData, countryCodes, platforms *map[string]int) {
+func worker(entries []Track, wg *sync.WaitGroup, mutex *sync.Mutex, totalMs *int, timeOfDay *map[int]int, simplifiedTracks *[]SimplifiedTrack, artists *map[string]*ArtistData, tracks *map[string]*TrackData, countryCodes, platforms *map[string]int,
+	artistsPlaysMap *map[string]ArtistData,
+	artistsMinutesMap *map[string]ArtistMinutes,
+	albumPlaysMap *map[string]AlbumPlays,
+	trackPlaysMap *map[string]TrackData) {
+
 	defer wg.Done()
 
 	localTotalMs := 0
@@ -315,6 +389,11 @@ func worker(entries []Track, wg *sync.WaitGroup, mutex *sync.Mutex, totalMs *int
 	localCountryCodes := make(map[string]int)
 	localTimeOfDayForTracksMap := make(map[int]int)
 	localPlatformMap := make(map[string]int)
+
+	localArtistsPlaysMap := make(map[string]ArtistData)
+	localArtistsMinutesMap := make(map[string]ArtistMinutes)
+	localAlbumPlaysMap := make(map[string]AlbumPlays)
+	localTrackPlaysMap := make(map[string]TrackData)
 
 	localSimplifiedTracks := make([]SimplifiedTrack, 0, len(entries))
 
@@ -368,6 +447,32 @@ func worker(entries []Track, wg *sync.WaitGroup, mutex *sync.Mutex, totalMs *int
 		}
 
 		localSimplifiedTracks = append(localSimplifiedTracks, simplifiedTrack)
+
+		artistData := localArtistsPlaysMap[artistName]
+		artistData.Count++
+		artistData.Artist = artistName
+		artistData.Uri = track.SpotifyTrackUri
+		localArtistsPlaysMap[artistName] = artistData
+
+		artistMinutes := localArtistsMinutesMap[artistName]
+		artistMinutes.Name = artistName
+		artistMinutes.Ms += track.MsPlayed
+		artistMinutes.Uri = track.SpotifyTrackUri
+		localArtistsMinutesMap[artistName] = artistMinutes
+
+		albumName := track.MasterMetadataAlbumAlbumName
+		albumData := localAlbumPlaysMap[albumName]
+		albumData.Name = albumName
+		albumData.Count++
+		albumData.TrackURI = track.SpotifyTrackUri
+		localAlbumPlaysMap[albumName] = albumData
+
+		trackData := localTrackPlaysMap[trackName]
+		trackData.Count++
+		trackData.Track = trackName
+		trackData.Uri = track.SpotifyTrackUri
+		trackData.Artist = artistName
+		localTrackPlaysMap[trackName] = trackData
 	}
 
 	mutex.Lock()
@@ -410,8 +515,40 @@ func worker(entries []Track, wg *sync.WaitGroup, mutex *sync.Mutex, totalMs *int
 
 	*simplifiedTracks = append(*simplifiedTracks, localSimplifiedTracks...)
 
-	mutex.Unlock()
+	for artistName, data := range localArtistsPlaysMap {
+		globalData := (*artistsPlaysMap)[artistName]
+		globalData.Count += data.Count
+		globalData.Artist = data.Artist
+		globalData.Uri = data.Uri
+		(*artistsPlaysMap)[artistName] = globalData
+	}
 
+	for artistName, data := range localArtistsMinutesMap {
+		globalData := (*artistsMinutesMap)[artistName]
+		globalData.Name = data.Name
+		globalData.Ms += data.Ms
+		globalData.Uri = data.Uri
+		(*artistsMinutesMap)[artistName] = globalData
+	}
+
+	for albumName, data := range localAlbumPlaysMap {
+		globalData := (*albumPlaysMap)[albumName]
+		globalData.Name = data.Name
+		globalData.Count += data.Count
+		globalData.TrackURI = data.TrackURI
+		(*albumPlaysMap)[albumName] = globalData
+	}
+
+	for trackName, data := range localTrackPlaysMap {
+		globalData := (*trackPlaysMap)[trackName]
+		globalData.Count += data.Count
+		globalData.Track = data.Track
+		globalData.Uri = data.Uri
+		globalData.Artist = data.Artist
+		(*trackPlaysMap)[trackName] = globalData
+	}
+
+	mutex.Unlock()
 }
 
 func getTopArtists(artists map[string]*ArtistData, limit int) []ArtistData {

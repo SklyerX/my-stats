@@ -1,74 +1,16 @@
 import { SpotifyAPI } from "@/lib/spotify/api";
 import { getValidSpotifyToken } from "@/lib/spotify/tokens";
-import { logger, task } from "@trigger.dev/sdk/v3";
+import { logger } from "@trigger.dev/sdk/v3";
 import { db } from "@workspace/database/connection";
 import { eq } from "@workspace/database/drizzle";
 import {
-  type MilestoneThresholds,
-  type SyncedPlays,
   syncedPlays,
   userListeningHistory,
-  userMilestones,
   users,
 } from "@workspace/database/schema";
 
 import { schedules } from "@trigger.dev/sdk/v3";
-
-async function processGlobalMilestones(
-  userId: string,
-  entityType: MilestoneThresholds["entityType"],
-  milestoneType: MilestoneThresholds["milestoneType"],
-  currentValue: number,
-) {
-  const [thresholds, lastMilestone] = await db.batch([
-    db.query.milestoneThresholds.findMany({
-      where: (fields, { eq, and }) =>
-        and(
-          eq(fields.entityType, entityType),
-          eq(fields.milestoneType, milestoneType),
-          eq(fields.active, true),
-        ),
-    }),
-    db.query.userMilestones.findFirst({
-      where: (fields, { eq, and }) =>
-        and(
-          eq(fields.userId, userId),
-          eq(fields.entityType, entityType),
-          eq(fields.entityId, ""),
-          eq(fields.milestoneType, milestoneType),
-        ),
-      orderBy: (fields, { desc }) => desc(fields.milestoneValue),
-    }),
-  ]);
-
-  const lastMilestoneValue = lastMilestone?.milestoneValue || 0;
-  const milestonesToCreate = [];
-
-  for (const threshold of thresholds) {
-    if (
-      threshold.thresholdValue > lastMilestoneValue &&
-      currentValue >= threshold.thresholdValue
-    ) {
-      milestonesToCreate.push({
-        entityType,
-        milestoneType,
-        milestoneValue: threshold.thresholdValue,
-        reachedAt: new Date(),
-        userId,
-        entityId: "",
-        milestoneName: threshold.milestoneName,
-      });
-    }
-  }
-
-  if (milestonesToCreate.length > 0) {
-    await db.insert(userMilestones).values(milestonesToCreate);
-    // call webhook here
-    return milestonesToCreate.length;
-  }
-
-  return 0;
-}
+import { processMilestones } from "@/lib/milestone-service";
 
 export const syncStreamsTask = schedules.task({
   id: "sync-streams",
@@ -148,14 +90,14 @@ export const syncStreamsTask = schedules.task({
     const currentTotalPlays =
       (existingUser.history.at(0)?.totalTracks || 0) + newPlaysCount;
 
-    const minutesMilestonesCreated = await processGlobalMilestones(
+    const minutesMilestonesCreated = await processMilestones(
       existingUser.id,
       "global",
       "minutes",
       currentTotalMinutes,
     );
 
-    const playsMilestonesCreated = await processGlobalMilestones(
+    const playsMilestonesCreated = await processMilestones(
       existingUser.id,
       "global",
       "plays",

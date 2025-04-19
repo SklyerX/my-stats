@@ -27,7 +27,7 @@ export async function registerWebhookAction(data: WebhookFormSchema) {
       name,
       url,
       userId: user.id,
-      webhookSecret: { data: encryptedData, iv, tag },
+      webhook_secret: { data: encryptedData, iv, tag },
     });
 
     return secret;
