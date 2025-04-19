@@ -360,7 +360,7 @@ export async function POST(req: Request, { params }: Props) {
     });
 
     await db.insert(webhookLogs).values({
-      status: result.isError ? "success" : "failed",
+      status: result.isError ? "failed" : "success",
       webhookId: webhook.id,
       requestData: result.request,
       responseData: result.response,

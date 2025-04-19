@@ -133,7 +133,7 @@ export const syncStreamsTask = schedules.task({
       });
 
       await db.insert(webhookLogs).values({
-        status: result.isError ? "success" : "failed",
+        status: result.isError ? "failed" : "success",
         webhookId: existingUser.webhook.id,
         requestData: result.request,
         responseData: result.response,
