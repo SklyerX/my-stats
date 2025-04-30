@@ -28,3 +28,39 @@ export type APIRecentlyPlayedFormat = {
     name: string;
   }[];
 };
+
+export type UserUsage = {
+  apiKeys: [
+    {
+      keyHash: string;
+      usage: {
+        daily: { [k: string]: number };
+        total: { [k: string]: number };
+        metadata: {
+          lastEndpoint: string;
+          lastMethod: string;
+          lastAccess: number;
+        };
+      };
+      metrics: {
+        total_requests: number;
+      };
+    },
+  ];
+  daily: { [k: string]: number };
+  total: {
+    [k: string]: number;
+  };
+  monthly: {
+    total: number;
+  };
+  metadata: {
+    lastEndpoint: string;
+    lastMethod: string;
+    lastAccess: number;
+  };
+  limits: {
+    monthly: number;
+    remaining: number;
+  };
+};

@@ -476,6 +476,7 @@ export const userRelations = relations(users, ({ one, many }) => ({
     references: [webhooks.userId],
   }),
   exports: many(userExports),
+  apiKeys: many(apiKeys),
 }));
 
 export const sessionsRelations = relations(sessions, ({ one }) => ({
@@ -602,6 +603,13 @@ export const userTopTracksRelations = relations(userTopTracks, ({ one }) => ({
   history: one(userListeningHistory, {
     fields: [userTopTracks.historyId],
     references: [userListeningHistory.id],
+  }),
+}));
+
+export const apiKeysRelations = relations(apiKeys, ({ one }) => ({
+  user: one(users, {
+    fields: [apiKeys.userId],
+    references: [users.id],
   }),
 }));
 

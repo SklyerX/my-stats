@@ -1,7 +1,7 @@
 import { cookies, headers } from "next/headers";
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
-import { isValidAPIKey } from "./lib/api-key";
+import { checkRateLimit, isValidAPIKey, trackUsage } from "./lib/api-key";
 
 export const config = {
   matcher: ["/((?!api/|_next/|public/|favicon.ico|globals.css).*)"],
@@ -35,6 +35,13 @@ export default async function middleware(req: NextRequest) {
       if (!isValid) {
         return NextResponse.json({ error: "Invalid API Key" }, { status: 401 });
       }
+
+      const isRatelimit = await checkRateLimit(req, apiKey);
+
+      if (isRatelimit)
+        return NextResponse.json({ message: "Ratelimited" }, { status: 429 });
+
+      await trackUsage(req, apiKey);
 
       return NextResponse.rewrite(
         new URL(`/api.stats.skylerx.ir${path}${queryString}`, req.url),
