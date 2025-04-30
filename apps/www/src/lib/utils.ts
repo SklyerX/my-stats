@@ -48,6 +48,7 @@ export function convertTo12Hour(hour: number) {
 export function getUrl(type = "main"): string {
   const isDev = process.env.NODE_ENV === "development";
   const port = isDev ? ":3000" : "";
+  const docsPort = isDev ? ":3001" : "";
 
   // For production
   if (!isDev) {
@@ -57,6 +58,10 @@ export function getUrl(type = "main"): string {
     if (type === "api") {
       return "https://api.stats.skylerx.ir";
     }
+    if (type === "docs") {
+      return "https://docs.stats.skylerx.ir";
+    }
+
     return "https://stats.skylerx.ir";
   }
 
@@ -68,6 +73,10 @@ export function getUrl(type = "main"): string {
 
   if (type === "api") {
     return `http://api.stats.skylerx.ir${port}`;
+  }
+
+  if (type === "docs") {
+    return `http://localhost${docsPort}`;
   }
 
   // Main site uses localhost by default in dev, unless FORCE_DOMAINS is set

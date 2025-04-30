@@ -22,6 +22,7 @@ import {
 } from "@workspace/ui/components/sidebar";
 import type { User } from "@workspace/database/schema";
 import Link from "next/link";
+import { getUrl } from "@/lib/utils";
 
 const data = {
   navMain: [
@@ -47,7 +48,8 @@ const data = {
     },
     {
       title: "Docs",
-      url: "/docs",
+      url: getUrl("docs"),
+      external: true,
       icon: Book,
     },
   ],
@@ -63,7 +65,7 @@ export function AppSidebar({
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton size="lg" asChild>
-              <Link href={`http://stats.skylerx.ir:3000/${user.slug}`}>
+              <Link href={`${getUrl()}/${user.slug}`}>
                 <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
                   <ChartNoAxesColumn />
                 </div>
