@@ -175,6 +175,8 @@ const buildResponseSingle = (
     const albumData = data as Album;
     return {
       album_title: albumData.name,
+      album_id: albumData.id,
+      album_type: albumData.album_type,
       cover_image: albumData.images.at(0)?.url,
       release_date: albumData.release_date,
       total_tracks: albumData.total_tracks,

@@ -1,0 +1,179 @@
+---
+title: User Top Items
+description: Get the top items of the user.
+---
+import { TypeTable } from 'fumadocs-ui/components/type-table';
+import { Tab, Tabs } from 'fumadocs-ui/components/tabs';
+
+### Endpoint
+
+<Tabs items={['tracks', 'albums', 'artists', 'genres']}>
+  <Tab>
+    ```
+    GET https://api.stats.skylerx.ir/v1/users/{identifier}/tracks
+    ```
+  </Tab>
+  <Tab>
+    ```
+    GET https://api.stats.skylerx.ir/v1/users/{identifier}/albums
+    ```
+  </Tab>
+  <Tab>
+    ```
+    GET https://api.stats.skylerx.ir/v1/users/{identifier}/artists
+    ```
+  </Tab>
+  <Tab>
+    ```
+    GET https://api.stats.skylerx.ir/v1/users/{identifier}/genres
+    ```
+  </Tab>
+</Tabs>
+
+
+## Input
+
+The `identifier` can be either the UserId or Slug. You can get this id using the users profile url. 
+
+Example: `https://stats.skyerlx.ir/ba`
+
+In this case `ba` is the identifier.
+
+```ts
+{
+  identifier: string;
+}
+```
+
+## Output
+
+### Tracks
+
+<TypeTable
+  type={{
+    name: {
+        description: 'The track name',
+        type: 'string',
+        required: true
+    },
+    album_name: {
+        description: 'The name of the album where the track is from',
+        type: 'string',
+        required: true
+    },
+    cover_image: {
+        description: 'The tracks cover image from Spotify',
+        type: 'string',
+        required: true
+    },
+    album_id: {
+        description: 'The album id where the track is from',
+        type: 'string',
+        required: true
+    },
+    track_id: {
+        description: 'The track id from Spotify',
+        type: 'string',
+        required: true
+    },
+    popularity: {
+        description: 'Track popularity',
+        type: 'number',
+        required: true
+    },
+    artists: {
+        description: 'Total streams of the track',
+        type: 'Array<{ name: string; artistId: string; }>',
+        required: true
+    },
+  }}
+/>
+
+### Albums
+
+<TypeTable
+  type={{
+    album_title: {
+        description: 'The album title',
+        type: 'string',
+        required: true
+    },
+    cover_image: {
+        description: 'The albums cover image from Spotify',
+        type: 'string',
+        required: true
+    },
+    album_id: {
+        description: 'The album id from Spotify',
+        type: 'string',
+        required: true
+    },
+    album_type: {
+        description: 'The album type according to Spotify',
+        type: '"album" | "single" | "compilation"',
+        required: true
+    },
+    release_date: {
+        description: 'When the album was released',
+        type: 'Date',
+        required: true
+    },
+    total_tracks: {
+        description: 'How many tracks are in the album',
+        type: 'number',
+        required: true
+    },
+    artists: {
+        description: 'The artists of the album',
+        type: 'Array<{ name: string; id: string; }>',
+        required: true
+    },
+  }}
+/>
+
+### Artists
+<TypeTable
+  type={{
+    name: {
+        description: 'The artist name',
+        type: 'string',
+        required: true
+    },
+    artist_id: {
+        description: 'The artist id from Spotify',
+        type: 'string',
+        required: true
+    },
+    cover_image: {
+        description: 'The artists cover image from Spotify',
+        type: 'string',
+        required: true
+    },
+    popularity: {
+        description: 'Artist popularity',
+        type: 'number',
+        required: true
+    },
+    genres: {
+        description: 'The artist genres',
+        type: 'Array<string>',
+        required: true
+    },
+    followers: {
+        description: 'The artist followers',
+        type: 'number',
+        required: true
+    },
+  }}
+/>
+
+### Genres
+<TypeTable
+  type={{
+    genres: {
+        description: "Top genres of the user",
+        type: 'Array<string>',
+        required: true
+    },
+  }}
+/>

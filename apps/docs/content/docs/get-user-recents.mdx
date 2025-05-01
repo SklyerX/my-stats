@@ -1,0 +1,75 @@
+---
+title: User Recently Played
+description: Get the users recently played tracks
+---
+import { TypeTable } from 'fumadocs-ui/components/type-table';
+import { Banner } from 'fumadocs-ui/components/banner';
+
+### Endpoint
+
+```
+GET https://api.stats.skylerx.ir/v1/users/{identifier}/recent
+```
+
+## Input
+
+The `identifier` can be either the UserId or Slug. You can get this id using the users profile url. 
+
+Example: `https://stats.skyerlx.ir/ba`
+
+In this case `ba` is the identifier.
+
+```ts
+{
+  identifier: string;
+}
+```
+
+## Output
+ 
+<Banner variant="normal">User's can disable their recently played</Banner>
+
+<TypeTable
+  type={{
+    "played_at": {
+        description: 'The timestamp when the track was played',
+        type: 'string',
+        required: true
+    },
+    "name": {
+        description: 'Name of the track',
+        type: 'string',
+        required: true
+    },
+    "album_name": {
+        description: 'Name of the album the track belongs to',
+        type: 'string',
+        required: true
+    },
+    "cover_image": {
+        description: 'URL of the track cover image',
+        type: 'string',
+        required: true
+    },
+    "album_id": {
+        description: 'Unique Spotify identifier for the album',
+        type: 'string',
+        required: true
+    },
+    "track_id": {
+        description: 'Unique Spotify identifier for the track',
+        type: 'string',
+        required: true
+    },
+    "popularity": {
+        description: 'Popularity score of the track (0-100) from Spotify',
+        type: 'number',
+        required: true
+    },
+    "artists": {
+        description: 'List of artists who performed the track',
+        type: 'Array<{ artistId: string; name: string }>',
+        required: true
+    }
+  }}
+/>

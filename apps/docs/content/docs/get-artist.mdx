@@ -1,0 +1,155 @@
+---
+title: Get Artist
+description: Get information about an artist
+---
+import { TypeTable } from 'fumadocs-ui/components/type-table';
+
+
+### Endpoint
+
+```
+GET https://api.stats.skylerx.ir/v1/artists/{artistId}
+```
+
+
+## Input
+
+The `artistId` has to be based on the the Spotify Artist Id. You can get this id using the [SpotifyAPI](https://developer.spotify.com/documentation/web-api/reference/#/operations/get-an-artist) or by using the [Spotify Web Player](https://open.spotify.com/).
+
+```ts
+{
+  artistId: string;
+}
+```
+
+<TypeTable
+  type={{
+    artistId: {
+      description:
+        'The artistId is the unique identifier for the artist in Spotify',
+      type: 'string',
+      required: true
+    },
+  }}
+/>
+
+## Output
+
+### Artist
+
+<TypeTable
+  type={{
+    // Artist properties
+    artistId: {
+      description: 'Unique Spotify identifier for the artist',
+      type: 'string',
+      required: true
+    },
+    name: {
+      description: 'Name of the artist',
+      type: 'string',
+      required: true
+    },
+    genres: {
+      description: 'Musical genres associated with the artist',
+      type: 'string[]',
+      required: true
+    },
+    imageUrl: {
+      description: 'URL to artist profile image',
+      type: 'string',
+      required: true
+    },
+    popularity: {
+      description: 'Spotify popularity score (0-100)',
+      type: 'number',
+      required: true
+    },
+    followerAmount: {
+      description: 'Number of followers on Spotify',
+      type: 'number',
+      required: true
+    },
+    relatedTo: {
+      description: 'Artists related to this artist with match scores',
+      type: 'Array<{ artistId: string; relatedArtistId: string; matchScore: string; source: string }>',
+      required: true
+    }
+  }}
+/>
+
+### Top Tracks
+
+<TypeTable
+  type={{
+    // Track properties
+    name: {
+      description: 'Title of the track',
+      type: 'string',
+      required: true
+    },
+    album_name: {
+      description: 'Name of the album containing this track',
+      type: 'string',
+      required: true
+    },
+    cover_image: {
+      description: 'URL to album cover artwork',
+      type: 'string',
+      required: true
+    },
+    album_id: {
+      description: 'Spotify ID for the album',
+      type: 'string',
+      required: true
+    },
+    track_id: {
+      description: 'Spotify ID for the track',
+      type: 'string',
+      required: true
+    },
+    popularity: {
+      description: 'Spotify popularity score for the track (0-100)',
+      type: 'number',
+      required: true
+    },
+    artists: {
+      description: 'Artists who performed on this track',
+      type: 'Array<{ artistId: string; name: string }>',
+      required: true
+    }
+  }}
+/>
+
+### Top Albums
+
+<TypeTable
+  type={{
+    // Album properties
+    album_title: {
+      description: 'Title of the album',
+      type: 'string',
+      required: true
+    },
+    cover_image: {
+      description: 'URL to album cover artwork',
+      type: 'string',
+      required: true
+    },
+    release_date: {
+      description: 'Date when the album was released',
+      type: 'string',
+      required: true
+    },
+    total_tracks: {
+      description: 'Number of tracks on the album',
+      type: 'number',
+      required: true
+    },
+    artists: {
+      description: 'Artists who contributed to the album',
+      type: 'Array<{ id: string; name: string }>',
+      required: true
+    }
+  }}
+/>

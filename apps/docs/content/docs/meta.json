@@ -1,0 +1,18 @@
+{
+  "title": "API",
+  "description": "The API documentation for MyStats",
+  "icon": "Building2",
+  "root": true,
+  "pages": [
+    "---Getting Started---",
+    "index",
+    "syncing",
+    "listening-history",
+    "---Artists---",
+    "get-artist",
+    "---Tracks---",
+    "get-track",
+    "---User Stats---",
+    "..."
+  ]
+}

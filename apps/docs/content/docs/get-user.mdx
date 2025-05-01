@@ -1,0 +1,80 @@
+---
+title: Get User
+description: Get information about a user
+---
+import { TypeTable } from 'fumadocs-ui/components/type-table';
+
+### Endpoint
+
+```
+GET https://api.stats.skylerx.ir/v1/users/{identifier}
+```
+
+## Input
+
+The `identifier` can be either the UserId or Slug. You can get this id using the users profile url. 
+
+Example: `https://stats.skyerlx.ir/ba`
+
+In this case `ba` is the identifier.
+
+```ts
+{
+  identifier: string;
+}
+```
+
+## Output
+
+<TypeTable
+  type={{
+    history: {
+      description:
+        'History of the user. This is an object that contains the href to the history endpoint',
+      type: '{ hasImported: boolean; href: string }',
+      required: true
+    },
+    bio: {
+      description: 'Bio of the user',
+      type: 'string',
+      required: false
+    },
+    username: {
+      description: 'Username of the user',
+      type: 'string',
+      required: true
+    },
+    spotifyId: {
+      description:
+        'Spotify Id of the user. This is a unique identifier for the user in Spotify',
+      type: 'string',
+      required: true
+    },
+    slug: {
+      description: 'Slug of the user. This is a unique identifier for the user in the app',
+      type: 'string',
+      required: true
+    },
+    image: {
+      description: 'Image of the user',
+      type: 'string',
+      required: true
+    }}
+    }
+/>
+
+### Output example
+
+```ts
+{
+    "history": {
+        "hasImported": true,
+        "href": "https://api.stats.skylerx.ir/v1/stats/users/ba/history"
+    },
+    "bio": "bro idek at this github.com/sklyerx",
+    "username": "Ba",
+    "spotifyId": "njvhy889bvyfjn6zpz5f1qd55",
+    "slug": "ba",
+    "image": "https://i.scdn.co/image/ab6775700000ee85286790c6608bbb29c3da161c"
+}
+```
