@@ -24,7 +24,7 @@ Some drawbacks of syncing are:
 To sync your Spotify data with MyStats, you need to follow these steps:
 1. **Login to MyStats**: Go to the [MyStats website](https://stats.skylerx.ir) and log in to your account.
 2. **Navigate to the Sync page**: Click on your user profile -> settings -> Import & Syncing.
-3. **Click on the Sync button**: This will start the syncing process. The syncing process may take a few minutes to complete, depending on the amount of data you have**.
+3. **Click on the Sync button**: This will start the syncing process. The syncing process may take a few minutes to complete, depending on the amount of data you have.
 4. **Check the status**: Once the syncing process is complete, you will see a success message and your data will be updated.
 
 or you can upload your Spotify history and syncing will be enabled automatically.
@@ -33,11 +33,11 @@ or you can upload your Spotify history and syncing will be enabled automatically
 ## How does it work?
 
 Once you enable syncing (either by clicking the sync button or uploading your Spotify history), MyStats will start syncing your data from Spotify. Here is the process:
-1. **Jobs**: MyStats will kick off a job in the background to sync your data. This job will execute in the background every 60 minutes.
+1. **Jobs**: MyStats will kick off a job in the background to sync your data. This job will execute every 60 minutes.
 2. **Data Retrieval**: MyStats will retrieve your data from Spotify using the Spotify API.
 3. **Data Processing**: MyStats will process your `recently played tracks` and will update your stats in the database.
 4. **Data Storage**: MyStats will store your data in the database and will update your stats, however if there has been no new plays since the previous sync it will ignore the storage process.
 
-Now you may be wondering how MyStats how to account for duplicate tracks. We completely wipe all data on upload and re-calculate everything from the listening history. This means no tracks or calculations will overlap.
+Now you may be wondering how MyStats accounts for duplicate tracks. We completely wipe all data on upload and re-calculate everything from the listening history. This means no tracks or calculations will overlap.
 
 *Note: Syncing may show slightly different data than your exported history, this is because syncing only gets the songs total duration from Spotify, Spotify does not provide how long the track was actually playing, however there is a theshold that Spotify calculates. If the song is over 90% played, it will count as a full play. If the song is under 90% played, it will count as a partial play. This is not a bug, this is how Spotify calculates the data. However, the exported history will show the exact time the track was played, so it may be slightly different than the synced data.*
