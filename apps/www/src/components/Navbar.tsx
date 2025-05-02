@@ -15,9 +15,6 @@ export default function Navbar({ user }: Props) {
           <Link href="/" className="text-3xl font-semibold mr-4">
             MyStats
           </Link>
-          <Link href="/blog" className="text-muted-foreground font-medium">
-            Blog
-          </Link>
         </div>
         <div>
           {user ? (

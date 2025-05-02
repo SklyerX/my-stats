@@ -6,6 +6,7 @@ import Image from "next/image";
 import Link from "next/link";
 import React, { useState } from "react";
 import { toggleSyncingAction } from "../../_actions/toggle-syncing";
+import { getUrl } from "@/lib/utils";
 
 interface Props {
   syncEnabled: boolean;
@@ -53,7 +54,7 @@ export default function SyncSpotifyStreams({ syncEnabled }: Props) {
           Sync your spotify streams with your imported listening history. If you
           have not imported your listening yet, the system will account for
           overlaps.{" "}
-          <Link className="text-primary" href="/docs/syncing">
+          <Link className="text-primary" href={`${getUrl("docs")}/syncing`}>
             Learn more
           </Link>{" "}
           about syncing

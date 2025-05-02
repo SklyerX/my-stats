@@ -6,6 +6,7 @@ import { getCurrentSession } from "@/auth/session";
 import { redirect } from "next/navigation";
 import { cn } from "@workspace/ui/lib/utils";
 import SyncSpotifyStreams from "../_components/import/SyncSpotifyStreams";
+import { getUrl } from "@/lib/utils";
 
 const f = new Intl.DateTimeFormat();
 
@@ -30,7 +31,10 @@ export default async function Page() {
         </p>
         <p className="text-muted-foreground">
           Unsure where to start?{" "}
-          <Link href="/docs/listening-history" className="text-primary">
+          <Link
+            href={`${getUrl("docs")}/listening-history`}
+            className="text-primary"
+          >
             click here
           </Link>{" "}
           for a full guide and explanation
