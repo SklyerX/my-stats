@@ -1,0 +1,110 @@
+---
+title: User Milestones
+description: Get the users listening milestones
+---
+import { TypeTable } from 'fumadocs-ui/components/type-table';
+
+Milestones may not be available if the user has not imported their listening history **or** they have not turned on their syncs
+
+
+### Endpoint
+
+```
+GET https://api.stats.skylerx.ir/v1/users/{identifier}/milestones
+```
+
+## Input
+
+The `identifier` can be either the UserId or Slug. You can get this id using the users profile url. 
+
+Example: `https://stats.skyerlx.ir/ba`
+
+In this case `ba` is the identifier.
+
+```ts
+{
+  identifier: string;
+}
+```
+
+## Output
+
+### Data
+ 
+<TypeTable
+  type={{
+    "based_on": {
+        description: 'What the milestone is based on',
+        type: '"artist" | "track" | "album" | "global"',
+        required: true
+    },
+    "name": {
+        description: 'Milestone name',
+        type: 'string',
+        required: true
+    },
+    "milestone_type": {
+        description: 'The type of milestone',
+        type: '"minutes" | "plays" | "days_streaked" | "unique_tracks" | "unique_artists" | "listening_days"',
+        required: true
+    },
+    "entity_type": {
+        description: 'The entity type of the milestone',
+        type: 'string',
+        required: true
+    },
+    "value": {
+        description: 'The value achieved for the milestone',
+        type: 'number',
+        required: true
+    },
+    "reached_at": {
+        description: 'When the milestone was reached',
+        type: 'Date',
+        required: true
+    },
+    "for": {
+        description: 'The ID (track,artist,etc) of the entity the milestone is for',
+        type: 'string',
+        required: true
+    },
+  }}
+/>
+
+### Pagination
+
+<TypeTable
+  type={{
+    "total_items": {
+        description: 'Whether there are more pages available',
+        type: 'boolean',
+        required: true
+    },
+    "total_pages": {
+        description: 'The next page number',
+        type: 'number',
+        required: true
+    },
+    "current_page": {
+        description: 'The current page number.',
+        type: 'number',
+        required: true
+    },
+    "items_per_page": {
+        description: 'Total number of items available per page',
+        type: 'number',
+        default: 50,
+        required: true
+    },
+    "has_next_page": {
+        description: 'Has the next page available',
+        type: 'boolean',
+        required: true
+    },
+    "has_previous_page": {
+        description: 'Has the previous page available',
+        type: 'boolean',
+        required: true
+    },
+  }}
+/>

@@ -1,0 +1,40 @@
+---
+title: Introduction
+description: MyStats API documentation
+---
+
+Welcome to the MyStats API documentation! This API provides access to various endpoints that allow you to retrieve user statistics, including top tracks, artists, albums, and more. The API is designed to be easy to use and provides a wide range of data for developers and users alike.
+
+## Getting Started
+To get started with the MyStats API, you will need to obtain an API key. This key is required for authentication and should be included in the headers of your requests.
+
+To obtain an API key, please visit the [MyStats developer dashboard](https://dashboard.stats.skylerx.ir/keys). Once you have an account, you can create a new API key and use it to authenticate your requests.
+
+## Authentication
+All requests to the MyStats API require authentication. You can authenticate your requests by including your API key in the headers of your requests.
+
+```
+X-Api-Key: YOU_API_KEY
+```
+
+## Rate Limiting
+The MyStats API has rate limits in place to ensure fair usage and prevent abuse. The current rate limit is 10 requests per minute. If you exceed this limit, you will receive a `429 Too Many Requests` response.
+Please make sure to handle this response in your application and implement appropriate retry logic.
+
+MyStats API also has a monthly limit of 700.
+
+This will be reset on the first day of each month.
+
+Please note that these are not set in stone and may change in the future.
+
+## Error Handling
+The MyStats API uses standard HTTP status codes to indicate the success or failure of a request. Here are some common status codes you may encounter:
+- `200 OK`: The request was successful.
+- `400 Bad Request`: The request was invalid or malformed.
+- `401 Unauthorized`: The request was not authenticated or the API key is invalid.
+- `403 Forbidden`: The request was authenticated but the user does not have permission to access the resource.
+- `404 Not Found`: The requested resource was not found.
+- `429 Too Many Requests`: The request was rate limited.
+- `500 Internal Server Error`: An unexpected error occurred on the server.
+
+These are the most common errors you may encounter. If you encounter any other errors, please refer to the API documentation or contact support for assistance.

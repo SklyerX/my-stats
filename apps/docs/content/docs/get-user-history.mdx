@@ -1,0 +1,160 @@
+---
+title: User History
+description: Get the exported listening history of the user.
+---
+import { TypeTable } from 'fumadocs-ui/components/type-table';
+
+### Endpoint
+
+```
+GET https://api.stats.skylerx.ir/v1/users/{identifier}/history
+```
+
+## Input
+
+The `identifier` can be either the UserId or Slug. You can get this id using the users profile url. 
+
+Example: `https://stats.skyerlx.ir/ba`
+
+In this case `ba` is the identifier.
+
+```ts
+{
+  identifier: string;
+}
+```
+
+## Output
+
+### Streaming stats
+
+<TypeTable
+  type={{
+    "minutes": {
+        description: 'Total minutes streamed (hour:minutes)',
+        type: 'number',
+        required: true
+    },
+    "hours": {
+        description: 'Total hours streamed (hour:minutes)',
+        type: 'number',
+        required: true
+    },
+    "unique_artists": {
+        description: 'Total unique artists streamed',
+        type: 'number',
+        required: true
+    },
+    "tracks": {
+        description: 'Total unique tracks streamed',
+        type: 'number',
+        required: true
+    },
+    "streams": {
+        description: 'Total tracks streamed',
+        type: 'number',
+        required: true
+    },
+    "peak_hour": {
+        description: 'When the user is most active',
+        type: 'number',
+        required: true
+    },
+  }}
+/>
+
+### Personalized Messages
+
+<TypeTable
+  type={{
+    "personalized_messages": {
+        description: 'Personalized messages for the user',
+        type: 'Array<string>',
+        required: true
+    },
+  }}
+  />
+
+```ts
+{
+    "personalized_messages": ['...']
+}
+```
+
+### Heatmap
+
+<TypeTable
+  type={{
+    years: {
+        description: 'Heatmap years',
+        type: "Array<number>",
+        required: true
+    },
+    maxCount: {
+        description: 'Max count of the heatmap',
+        type: "number",
+        required: true
+    },
+    dailyCounts: {
+        description: 'Daily counts of the heatmap',
+        type: "Array<{ date: string, count: number }>",
+        required: true
+    },
+  }}
+/>
+
+### Listening Sessions
+
+<TypeTable
+  type={{
+    total_sessions: {
+        description: 'Total listening sessions',
+        type: "number",
+        required: true
+    },
+    duration: {
+        description: 'Longest session duration (ms)',
+        type: "number",
+        required: true
+    },
+    started_at: {
+        description: 'When the session started',
+        type: "Date",
+        required: true
+    },
+    stopped_at: {
+        description: 'When the session stopped',
+        type: "Date",
+        required: true
+    },
+  }}
+/>
+
+#### Insights for listening session
+
+```ts
+{
+    "insights": {
+        "tracks": {
+            "total": number,
+            "unique": number
+        },
+        "artists": {
+            "total": number,
+            "unique": number
+        }
+    }
+}
+```
+
+### Hourly Activity
+
+<TypeTable
+  type={{
+    "hourly_activity": {
+        description: 'Hourly activity of the user',
+        type: 'Array<{ hour: number, count: number }>',
+        required: true
+    },
+  }}
+/>

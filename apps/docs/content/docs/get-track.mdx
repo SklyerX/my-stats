@@ -1,0 +1,87 @@
+---
+title: Get Track
+description: Get information about a track
+---
+import { TypeTable } from 'fumadocs-ui/components/type-table';
+
+
+### Endpoint
+
+```
+GET https://api.stats.skylerx.ir/v1/tracks/{trackId}
+```
+
+
+## Input
+
+The `trackId` has to be based on the the Spotify Track Id. You can get this id using the [SpotifyAPI](https://developer.spotify.com/documentation/web-api/reference/get-track) or by using the [Spotify Web Player](https://open.spotify.com/).
+
+```ts
+{
+  trackId: string;
+}
+```
+
+<TypeTable
+  type={{
+    trackId: {
+      description:
+        'The trackId is the unique identifier for the artist in Spotify',
+      type: 'string',
+      required: true
+    },
+  }}
+/>
+
+## Output
+
+<TypeTable
+  type={{
+    // Track properties
+    "trackId": {
+      description: 'Unique Spotify identifier for the track',
+      type: 'string',
+      required: true
+    },
+    "name": {
+      description: 'Name of the track',
+      type: 'string',
+      required: true
+    },
+    "album": {
+      description: 'The album that the track belongs to',
+      type: 'string',
+      required: true
+    },
+    "albumId": {
+      description: 'Album Id from Spotify',
+      type: 'string',
+      required: true
+    },
+    "artist": {
+      description: 'The artist of the track',
+      type: 'string',
+      required: true
+    },
+    "isrc": {
+      description: 'The ISRC code of the track',
+      type: 'string',
+      required: true
+    },
+    "imageUrl": {
+      description: 'The track cover image',
+      type: 'string',
+      required: true
+    },
+    "popularity": {
+      description: 'Popularity score of the track (0-100) from Spotify',
+      type: 'number',
+      required: true
+    },
+    "duration": {
+      description: 'Duration of the track in milliseconds',
+      type: 'number',
+      required: true
+    },
+  }}
+/>
