@@ -46,7 +46,7 @@ export default async function OpenSource() {
           </Link>
         </div>
       </div>
-      <div className="mt-10">
+      <div className="my-10">
         <Card>
           <CardContent className="h-96 overflow-scroll">
             <code className="font-mono py-2">
