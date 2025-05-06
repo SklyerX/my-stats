@@ -2,6 +2,7 @@
 
 import { TrendingUp } from "lucide-react";
 import { Area, AreaChart, CartesianGrid, XAxis } from "recharts";
+import type { JSX } from "react";
 
 import {
   Card,
@@ -37,7 +38,7 @@ const dayNames: { [key: string]: string } = {
   "6": "Saturday",
 };
 
-export function WeekdayAverage({ data }: { data: Props }) {
+export function WeekdayAverage({ data }: { data: Props }): JSX.Element {
   const chartData = Object.entries(data.dayCountMap).map(([dayNum, count]) => ({
     day: dayNames[dayNum],
     streams: count,

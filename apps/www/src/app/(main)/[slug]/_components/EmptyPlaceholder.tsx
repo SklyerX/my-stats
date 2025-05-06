@@ -1,7 +1,7 @@
 import { TIME_RANGE_TEXT } from "@/lib/constants";
 import type { TIME_RANGE } from "@/types/spotify";
-import { EyeOff } from "lucide-react";
-import React from "react";
+import { EyeClosed } from "lucide-react";
+import type { JSX } from "react";
 
 interface BaseProps {
   displayName: string;
@@ -29,7 +29,7 @@ export default function EmptyPlaceholder({
   hideHeader,
   timeRange,
   noTitle,
-}: Props) {
+}: Props): JSX.Element {
   return (
     <div>
       {!hideHeader && title && (
@@ -45,7 +45,7 @@ export default function EmptyPlaceholder({
         <h2 className="text-2xl font-semibold">{title}</h2>
       )}
       <div className="w-full h-52 flex flex-col items-center justify-center">
-        <EyeOff className="size-5" />
+        <EyeClosed className="size-5" />
         <p className="text-muted-foreground">
           {displayName} does not share this data
         </p>

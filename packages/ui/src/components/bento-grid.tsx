@@ -1,4 +1,4 @@
-import { ComponentPropsWithoutRef, ReactNode } from "react";
+import type { ComponentPropsWithoutRef, ReactNode } from "react";
 
 import { Button } from "@workspace/ui/components/button";
 import { cn } from "@workspace/ui/lib/utils";
@@ -16,7 +16,7 @@ interface BentoCardProps extends ComponentPropsWithoutRef<"div"> {
   Icon: React.ElementType;
   description: string;
   cta?: string;
-  href: string;
+  href?: string;
 }
 
 const BentoGrid = ({ children, className, ...props }: BentoGridProps) => {

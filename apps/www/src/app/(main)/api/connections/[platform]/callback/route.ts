@@ -1,10 +1,9 @@
 import { getCurrentSession } from "@/auth/session";
 import { env } from "@/env";
 import { db } from "@workspace/database/connection";
-import type { db as DBType } from "@workspace/database/connection";
 import { integrations, type User } from "@workspace/database/schema";
-import { getURL } from "next/dist/shared/lib/utils";
 import { NextResponse } from "next/server";
+import { getUrl } from "@/lib/utils";
 
 interface Props {
   params: Promise<{
@@ -32,7 +31,7 @@ const OAUTH_CONFIGS: Record<string, OAuthConfig> = {
     userInfoUrl: "https://discord.com/api/v10/users/@me",
     clientId: env.DISCORD_CLIENT_ID,
     clientSecret: env.DISCORD_CLIENT_SECRET,
-    redirectUri: `${getURL()}/api/connections/discord/callback`,
+    redirectUri: `${getUrl()}/api/connections/discord/callback`,
     getUserData: (userData) => ({
       id: userData.id,
       username: userData.username,
@@ -47,7 +46,7 @@ const OAUTH_CONFIGS: Record<string, OAuthConfig> = {
     userInfoUrl: "https://api.github.com/user",
     clientId: env.GITHUB_CLIENT_ID,
     clientSecret: env.GITHUB_CLIENT_SECRET,
-    redirectUri: `${getURL()}/api/connections/github/callback`,
+    redirectUri: `${getUrl()}/api/connections/github/callback`,
     getUserData: (userData) => ({
       id: userData.id,
       username: userData.login,
@@ -60,7 +59,7 @@ const OAUTH_CONFIGS: Record<string, OAuthConfig> = {
     userInfoUrl: "https://api.twitch.tv/helix/users",
     clientId: env.TWITCH_CLIENT_ID,
     clientSecret: env.TWITCH_CLIENT_SECRET,
-    redirectUri: `${getURL()}/api/connections/twitch/callback`,
+    redirectUri: `${getUrl()}/api/connections/twitch/callback`,
     getUserData: (userData) => {
       const user = userData.data[0];
       return {
@@ -113,7 +112,7 @@ export async function GET(req: Request, { params }: Props) {
 }
 
 async function handleOAuth(req: Request, user: User, platform: string) {
-  const config = OAUTH_CONFIGS[platform];
+  const config = OAUTH_CONFIGS[platform] as OAuthConfig;
   const url = new URL(req.url);
   const code = url.searchParams.get("code");
 

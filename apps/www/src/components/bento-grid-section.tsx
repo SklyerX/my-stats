@@ -2,14 +2,9 @@ import { getUrl } from "@/lib/utils";
 import { BentoCard, BentoGrid } from "@workspace/ui/components/bento-grid";
 import { Globe } from "@workspace/ui/components/globe";
 
-import {
-  BellIcon,
-  Code2Icon,
-  Cpu,
-  GaugeIcon,
-  LockIcon,
-  Shield,
-} from "lucide-react";
+import type { JSX } from "react";
+
+import { Code2Icon, Cpu, GaugeIcon, LockIcon, Shield } from "lucide-react";
 
 const features = [
   {
@@ -30,6 +25,7 @@ const features = [
     name: "High Performance",
     description: "Fast and efficient data processing.",
     className: "lg:col-start-1 lg:col-end-2 lg:row-start-3 lg:row-end-4",
+    background: <></>,
   },
   {
     Icon: Cpu,
@@ -50,6 +46,7 @@ const features = [
     name: "Secure by Default",
     description: "Best security practices to protect you and your account data",
     className: "lg:col-start-3 lg:col-end-3 lg:row-start-1 lg:row-end-2",
+    background: <></>,
   },
   {
     Icon: LockIcon,
@@ -59,10 +56,11 @@ const features = [
     href: "/privacy",
     cta: "Learn More",
     className: "lg:col-start-3 lg:col-end-3 lg:row-start-2 lg:row-end-4",
+    background: <></>,
   },
 ];
 
-export default function BentoGridSection() {
+export default function BentoGridSection(): JSX.Element {
   return (
     <BentoGrid className="lg:grid-rows-3">
       {features.map((feature) => (

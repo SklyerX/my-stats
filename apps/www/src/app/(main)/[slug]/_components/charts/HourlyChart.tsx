@@ -2,6 +2,7 @@
 
 import { TrendingUp } from "lucide-react";
 import { Bar, BarChart, XAxis, YAxis } from "recharts";
+import type { JSX } from "react";
 
 import {
   Card,
@@ -36,7 +37,7 @@ export default function HourlyChart({
   data,
   title = "Hourly Activity",
   description = "24-Hour Distribution",
-}: HourlyChartProps) {
+}: HourlyChartProps): JSX.Element {
   const chartConfig = {
     count: {
       label: "Count",

@@ -1,5 +1,7 @@
 "use client";
 
+import type { JSX } from "react";
+
 import { Bar, BarChart, CartesianGrid, XAxis } from "recharts";
 import {
   Card,
@@ -33,7 +35,9 @@ const chartConfig = {
   },
 } satisfies ChartConfig;
 
-export function SessionInsightsChart({ data }: SessionInsightsChartProps) {
+export function SessionInsightsChart({
+  data,
+}: SessionInsightsChartProps): JSX.Element {
   // Transform the data into the format expected by the chart
   const chartData = [
     {
