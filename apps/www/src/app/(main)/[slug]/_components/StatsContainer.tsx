@@ -40,10 +40,10 @@ import ListeningSessionStats from "./sections/ListeningSessionStats";
 import StreamingStats from "./sections/StreamingStats";
 import TopHistoryItems from "./sections/TopHistoryItems";
 import HeatmapSection from "./sections/HeatmapSection";
-import { hasPrivacyFlag, PRIVACY_FLAGS, PRIVACY_OPTIONS } from "@/lib/flags";
-import { TIME_RANGE_TEXT } from "@/lib/constants";
-import { EyeOff } from "lucide-react";
+import { hasPrivacyFlag, PRIVACY_FLAGS } from "@/lib/flags";
 import EmptyPlaceholder from "./EmptyPlaceholder";
+
+import type { JSX } from "react";
 
 interface Props {
   initialStats: Awaited<
@@ -77,7 +77,7 @@ export default function StatsContainer({
   user,
   listeningHistory,
   authedUser,
-}: Props) {
+}: Props): JSX.Element {
   const [timeRange, setTimeRange] = useQueryState(
     "time_range",
     parseAsStringLiteral(TIME_RANGES).withDefault("short_term"),
