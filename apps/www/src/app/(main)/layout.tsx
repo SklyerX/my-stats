@@ -19,7 +19,7 @@ export default async function MainAppLayout({
   return (
     <Fragment>
       <Navbar user={user} />
-      <main className="container mx-auto max-w-5xl mt-20 pb-10 px-2">
+      <main className="container mx-auto max-w-5xl mt-20 pb-10 px-2 min-h-screen">
         {children}
       </main>
     </Fragment>

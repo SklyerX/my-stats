@@ -16,6 +16,7 @@ export const CACHE_KEYS = {
     `track-audio-features-queue:${trackId}`,
   albumData: (albumId: string) => `album:${albumId}`,
   playback: (userId: string) => `playback:${userId}`,
+  commits: () => "commits",
 };
 
 export const CACHE_TIMES = {
@@ -28,6 +29,7 @@ export const CACHE_TIMES = {
   relatedArtistsQueue: 300,
   trackAudioFeatures: 86400,
   trackAudioFeaturesQueue: 300,
+  commits: 3600,
 };
 
 export const TIME_RANGE_TEXT: Record<TIME_RANGE, string> = {
