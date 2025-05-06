@@ -9,6 +9,8 @@ import type { Integrations } from "@workspace/database/schema";
 import { FaDiscord, FaGithub, FaSpotify, FaTwitch } from "react-icons/fa";
 import type { IconType } from "react-icons/lib";
 
+import type { JSX } from "react";
+
 const URL_WITHOUT_PROTOCOL_REGEX =
   /[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&//=]*)/;
 
@@ -43,7 +45,7 @@ export default function UserProfile({
   session,
   slug,
   integrations,
-}: Props) {
+}: Props): JSX.Element {
   const isCurrentUser = user.id === session?.user?.id;
   const showCompareButton = isCurrentUser || session?.user;
 
