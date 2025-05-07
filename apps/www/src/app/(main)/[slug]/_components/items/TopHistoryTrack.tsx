@@ -4,13 +4,14 @@ import Link from "next/link";
 import Image from "next/image";
 import React from "react";
 import { Dot } from "lucide-react";
+import type { JSX } from "react/jsx-runtime";
 
 interface Props {
   track: Track;
   index: number;
 }
 
-export default function TopHistoryTrack({ track, index }: Props) {
+export default function TopHistoryTrack({ track, index }: Props): JSX.Element {
   return (
     <Link
       href={`/track/${track.trackId}`}
