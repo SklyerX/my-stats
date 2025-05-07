@@ -46,6 +46,7 @@ export default function TopHistoryTrack({ track, index }: Props): JSX.Element {
             </div>
             <div className="flex items-center text-sm text-muted-foreground font-medium">
               <p className="truncate">{track.artist}</p>
+              {/* @ts-ignore */}
               <Dot className="size-3 shrink-0" />
               <p className="truncate">{track.album}</p>
             </div>

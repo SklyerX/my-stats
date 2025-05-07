@@ -70,6 +70,7 @@ export function RecentlyPlayed({
                     <p className="truncate">
                       {track.artists.map((artist) => artist.name).join(", ")}
                     </p>
+                    {/* @ts-ignore */}
                     <Dot className="size-3 shrink-0" />
                     <p className="truncate">{track.album.name}</p>
                   </div>
