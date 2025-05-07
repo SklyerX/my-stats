@@ -1,6 +1,6 @@
 import type { Artists } from "@workspace/database/schema";
 import { cn } from "@workspace/ui/lib/utils";
-import { default as NextLink } from "next/link";
+import Link from "next/link";
 import React from "react";
 import type { JSX } from "react";
 
@@ -15,7 +15,8 @@ export default function TopHistoryArtist({
 }: Props): JSX.Element {
   return (
     <>
-      <NextLink href={`/artist/${artist.id}`}>
+      {/* @ts-ignore - Ignoring type issues with React 19 and Next.js Link */}
+      <Link href={`/artist/${artist.id}`} legacyBehavior>
         <div className="aspect-square">
           <img
             src={artist.imageUrl || "https://via.placeholder.com/1000"}
@@ -33,7 +34,7 @@ export default function TopHistoryArtist({
             . {artist.name}
           </div>
         </div>
-      </NextLink>
+      </Link>
     </>
   );
 }
