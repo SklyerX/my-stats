@@ -1,6 +1,6 @@
 import type { Artists } from "@workspace/database/schema";
 import { cn } from "@workspace/ui/lib/utils";
-import Link from "next/link";
+import { default as NextLink } from "next/link";
 import React from "react";
 import type { JSX } from "react";
 
@@ -15,7 +15,7 @@ export default function TopHistoryArtist({
 }: Props): JSX.Element {
   return (
     <>
-      <Link href={`/artist/${artist.id}`}>
+      <NextLink href={`/artist/${artist.id}`}>
         <div className="aspect-square">
           <img
             src={artist.imageUrl || "https://via.placeholder.com/1000"}
@@ -33,7 +33,7 @@ export default function TopHistoryArtist({
             . {artist.name}
           </div>
         </div>
-      </Link>
+      </NextLink>
     </>
   );
 }

@@ -3,6 +3,7 @@ import type { TIME_RANGE } from "@/types/spotify";
 import { Skeleton } from "@workspace/ui/components/skeleton";
 import { AnimatedArtist } from "../wrappers/animated";
 import { Header } from "./Header";
+import type { JSX } from "react/jsx-runtime";
 
 interface TopArtistsProps {
   artists: Awaited<
@@ -22,7 +23,7 @@ export function TopArtists({
   isLoading,
   expanded,
   updateExpanded,
-}: TopArtistsProps) {
+}: TopArtistsProps): JSX.Element {
   return (
     <div>
       <Header
