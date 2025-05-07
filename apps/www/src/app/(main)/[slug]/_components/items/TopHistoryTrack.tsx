@@ -29,6 +29,7 @@ export default function TopHistoryTrack({ track, index }: Props): JSX.Element {
           #{index + 1}
         </span>
         <div className="group w-full flex items-start gap-3 p-2 hover:bg-muted/50 rounded-lg transition-colors">
+          {/* @ts-ignore */}
           <Image
             src={track.imageUrl || "/placeholder.svg"}
             alt={`${track.name}'s Album Cover`}
