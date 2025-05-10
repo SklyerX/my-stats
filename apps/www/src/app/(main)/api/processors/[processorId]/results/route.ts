@@ -71,6 +71,15 @@ export async function POST(req: Request, { params }: Props) {
 
   console.log("Existing Export", existingExport);
 
+  await db.batch([
+    db
+      .delete(userTopTracks)
+      .where(eq(userTopTracks.userId, existingExport.userId)),
+    db
+      .delete(userTopArtists)
+      .where(eq(userTopArtists.userId, existingExport.userId)),
+  ]);
+
   const [history] = await db
     .insert(userListeningHistory)
     .values({
