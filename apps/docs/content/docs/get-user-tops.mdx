@@ -45,6 +45,31 @@ In this case `ba` is the identifier.
 }
 ```
 
+### Query Params
+
+<TypeTable
+  type={{
+    limit: {
+        description: "How many items you want to receive",
+        type: 'number',
+    },
+    offset: {
+        description: "How many items you want to skip over",
+        type: 'number',
+    },
+    time_range: {
+       description: "The time range of the data",
+        type: '"short_term" | "medium_term" | "long_term"',
+    },
+    include: {
+      description: "If you'd like to include other related fields",
+      type: '"artists" | "genres" | "albums" | "tracks"'
+    }
+  }}
+/>
+
+The include field is comma separated meaning you'd need something like `?include=artists,genres`
+
 ## Output
 
 ### Tracks

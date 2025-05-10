@@ -24,6 +24,19 @@ In this case `ba` is the identifier.
 }
 ```
 
+### Query Params
+
+<TypeTable
+  type={{
+    include: {
+      description: "If you'd like to include other related fields",
+      type: '"artists" | "tracks"'
+    }
+  }}
+/>
+
+The include field is comma separated meaning you'd need something like `?include=artists,genres`
+
 ## Output
 
 ### Streaming stats
