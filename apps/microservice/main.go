@@ -82,6 +82,12 @@ func main() {
 		})
 	})
 
+	app.Get("/health", func(c *fiber.Ctx) error {
+		return c.JSON(fiber.Map{
+			"message": "successfully running",
+		})
+	})
+
 	log.Fatal(app.Listen(":8080"))
 }
 
