@@ -27,6 +27,11 @@ func main() {
 	secretKey := os.Getenv("AWS_SECRET_ACCESS_KEY")
 	bucketName := os.Getenv("S3_BUCKET_NAME")
 	region := os.Getenv("AWS_REGION")
+	port := os.Getenv("PORT")
+
+	if port == "" {
+		port = "8080"
+	}
 
 	if accessKey == "" || secretKey == "" || region == "" || bucketName == "" {
 		log.Fatal("AWS credentials and region must be set")
@@ -88,7 +93,7 @@ func main() {
 		})
 	})
 
-	log.Fatal(app.Listen(":8080"))
+	log.Fatal(app.Listen(":" + port))
 }
 
 func authChecker(c *fiber.Ctx) error {
