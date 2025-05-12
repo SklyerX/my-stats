@@ -10,8 +10,15 @@ import OpenSource from "@/components/open-source";
 export default function Home() {
   return (
     <div>
-      <div className="pointer-events-none absolute -right-48 top-0 -z-10 h-[15rem] w-[50rem] rotate-[32deg] rounded-[70rem] bg-[rgb(125,41,134)] opacity-25 blur-[100px] transition-colors duration-75" />
-      <div className="pointer-events-none absolute right-48 top-0 -z-10 h-[15rem] w-[50rem] rotate-[32deg] rounded-[70rem] bg-[rgb(41,37,124)] opacity-25 blur-[100px] transition-colors duration-75" />
+      <div
+        className="pointer-events-none absolute top-0 right-0 -z-10 h-[15rem] w-[30rem] md:w-[50rem] rounded-[70rem] bg-[rgb(125,41,134)] opacity-25 blur-[100px] transition-colors duration-75 hidden md:block"
+        style={{ transform: "translateX(25%) rotate(32deg)" }}
+      />
+      <div
+        className="pointer-events-none absolute top-0 right-0 -z-10 h-[15rem] w-[30rem] md:w-[50rem] rounded-[70rem] bg-[rgb(41,37,124)] opacity-25 blur-[100px] transition-colors duration-75 hidden md:block"
+        style={{ transform: "translateX(-25%) rotate(32deg)" }}
+      />
+
       <Particles
         className="absolute inset-0 -z-10"
         quantity={60}
@@ -19,11 +26,11 @@ export default function Home() {
         color="#ffffff"
         refresh
       />
-      <div>
-        <h1 className="text-4xl font-semibold">
+      <div className="px-4 sm:px-6 lg:px-8">
+        <h1 className="text-3xl md:text-4xl font-semibold">
           Dive Deep Into Your Music DNA
         </h1>
-        <p className="mt-4 text-xl text-muted-foreground">
+        <p className="mt-4 text-lg md:text-xl text-muted-foreground">
           Real-time insights into your listening habits, top artists, and music
           journey
         </p>
@@ -35,27 +42,33 @@ export default function Home() {
           Login with Spotify
         </Link>
       </div>
-      <Safari
-        url="stats.skylerx.ir"
-        className="size-full mt-10"
-        videoSrc="https://l767bpghlz.ufs.sh/f/MKOrZK7t4p6TXCHgh3EOqrIDBUh4HVY7dwZbgu0ezlX6onx2"
-      />
-      <div className="mt-20 flex flex-col items-center">
-        <h3 className="text-5xl font-semibold mb-2">
+
+      <div className="w-full mt-10 overflow-hidden">
+        <Safari
+          url="stats.skylerx.ir"
+          className="w-full max-w-full"
+          videoSrc="https://l767bpghlz.ufs.sh/f/MKOrZK7t4p6TXCHgh3EOqrIDBUh4HVY7dwZbgu0ezlX6onx2"
+        />
+      </div>
+
+      <div className="mt-20 px-4 sm:px-6 lg:px-8 flex flex-col items-center">
+        <h3 className="text-4xl md:text-5xl font-semibold mb-2 text-center">
           Not Just Another Stats App
         </h3>
-        <p className="text-muted-foreground text-xl mb-10">
+        <p className="text-muted-foreground text-lg md:text-xl mb-10 text-center">
           No paywalls for your rights. Your listening stats, done right — clean,
           fast, and honest.
         </p>
         <BentoGridSection />
       </div>
-      <TextReveal>
-        We don't like to lie to our users with bullshit marketing, fake stats,
-        and pointless paywalls. We value your time and your money.
-      </TextReveal>
-      <WhatSetsUsApart />
-      <OpenSource />
+      <div className="px-4 sm:px-6 lg:px-8">
+        <TextReveal>
+          We don't like to lie to our users with bullshit marketing, fake stats,
+          and pointless paywalls. We value your time and your money.
+        </TextReveal>
+        <WhatSetsUsApart />
+        <OpenSource />
+      </div>
     </div>
   );
 }
