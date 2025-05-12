@@ -52,12 +52,10 @@ export default function UserProfile({
   return (
     <div className="flex flex-col gap-4">
       <div className="flex gap-8">
-        <Image
+        <img
           src={user.image}
           alt={`${user.name}`}
-          width={120}
-          height={120}
-          className="rounded-full"
+          className="rounded-full w-28 h-28"
         />
 
         <div className="mt-4 w-full">

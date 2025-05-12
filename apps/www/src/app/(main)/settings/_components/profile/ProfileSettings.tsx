@@ -58,12 +58,10 @@ export default function ProfileSettings({ user }: Props) {
         </Button>
       </div>
       <div className="flex gap-6 items-center mt-10">
-        <Image
+        <img
           src={user.image || "https://via.placeholder.com/1000"}
           alt={`${user.username}'s profile cover`}
-          className="rounded-full"
-          width={150}
-          height={150}
+          className="rounded-full w-36 h-36"
         />
         <ProfileForm user={user} />
       </div>
