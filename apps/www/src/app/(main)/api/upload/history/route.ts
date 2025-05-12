@@ -113,6 +113,8 @@ export async function POST(req: Request) {
       }),
     });
 
+    console.log(`Sending to: ${url}`);
+
     request.headers.set("Content-Type", "application/json");
     request.headers.set("x-api-key", env.APP_AUTH_KEY);
 
