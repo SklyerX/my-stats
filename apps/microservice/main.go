@@ -23,7 +23,7 @@ func main() {
 		log.Println("Warning: No .env found")
 	}
 
-	accessKey := os.Getenv("AWS_ACCESS_KEY_ID_ID")
+	accessKey := os.Getenv("AWS_ACCESS_KEY_ID")
 	secretKey := os.Getenv("AWS_SECRET_ACCESS_KEY")
 	bucketName := os.Getenv("S3_BUCKET_NAME")
 	region := os.Getenv("AWS_REGION")
