@@ -10,7 +10,7 @@ import { getSystemAccessToken } from "@/lib/spotify/system";
 import { chunks } from "@/lib/utils";
 import { sendWebhook } from "@/lib/webhooks";
 import type { Artist, Track } from "@/types/spotify";
-import { DeleteObjectCommand } from "@aws-sdk/client-s3";
+import { DeleteObjectsCommand, GetObjectCommand } from "@aws-sdk/client-s3";
 import { db } from "@workspace/database/connection";
 import { eq, sql } from "@workspace/database/drizzle";
 import {
@@ -25,6 +25,9 @@ import {
   webhookLogs,
 } from "@workspace/database/schema";
 import { z } from "zod";
+import zlib from "node:zlib";
+import { promisify } from "node:util";
+import { tryCatch } from "@/lib/try-catch";
 
 interface Props {
   params: Promise<{
@@ -40,14 +43,46 @@ export async function POST(req: Request, { params }: Props) {
 
   const appKey = req.headers.get("x-api-key");
 
+  if (!z.string().safeParse(body.s3_key).success)
+    return new Response("Bad Request", { status: 400 });
+
   if (appKey !== env.APP_AUTH_KEY)
     return new Response("Unauthorized", { status: 401 });
 
+  const gunzip = promisify(zlib.gunzip);
+
+  const command = new GetObjectCommand({
+    Bucket: env.AWS_BUCKET_NAME,
+    Key: body.s3_key,
+  });
+
+  const response = await s3.send(command);
+
+  if (!response.Body) {
+    return new Response("File body is empty", {
+      status: 404,
+    });
+  }
+
+  const compressedBytes = await response.Body?.transformToByteArray();
+
+  const decompressedBuffer = await gunzip(Buffer.from(compressedBytes));
+
+  const fileContents = decompressedBuffer.toString("utf-8");
+
+  const { data: jsonData, error } = await tryCatch(JSON.parse(fileContents));
+
+  if (error)
+    return new Response(
+      JSON.stringify({
+        success: false,
+        message: "Invalid JSON data",
+      }),
+    );
+
   console.log("Processor ID", processorId);
 
-  const { data, success } = schema.safeParse(body);
-
-  console.log("Data", data);
+  const { data, success } = schema.safeParse(jsonData);
 
   if (!success) {
     return new Response("Bad Request", { status: 400 });
@@ -325,12 +360,14 @@ export async function POST(req: Request, { params }: Props) {
     );
   }
 
-  const command = new DeleteObjectCommand({
+  const deleteCommand = new DeleteObjectsCommand({
     Bucket: env.AWS_BUCKET_NAME,
-    Key: existingExport.fileName,
+    Delete: {
+      Objects: [existingExport.fileName, body.s3_key],
+    },
   });
 
-  await s3.send(command);
+  await s3.send(deleteCommand);
 
   const webhook = existingExport.user.webhook;
 

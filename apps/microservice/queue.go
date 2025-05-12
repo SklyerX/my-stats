@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"os"
 	"path/filepath"
@@ -87,10 +88,11 @@ func (q *Queue) worker(id int) {
 				return
 			}
 
-			err = SendToBackend(result)
+			err = SendToBackend(q.s3Client, q.bucketName, result)
 
 			if err != nil {
 				log.Printf("Something went wrong while sending results back to the backend")
+				fmt.Printf("Error:\n%v", err)
 				return
 			}
 
