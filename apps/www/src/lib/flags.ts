@@ -102,7 +102,7 @@ export const PRIVACY_OPTIONS = [
 ];
 
 export function hasPrivacyFlag(userFlags: number, flag: number) {
-  return Boolean(userFlags & flag);
+  return (userFlags & flag) !== 0;
 }
 
 export function isDataVisible(userFlags: number, flag: number) {

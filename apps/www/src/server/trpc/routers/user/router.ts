@@ -296,31 +296,53 @@ export const userRouter = router({
       const targetStats = await getUserTopStats(existingUser, timeRange);
       const selfStats = await getUserTopStats(ctx.user, timeRange);
 
+      const privacySettings = {
+        tracks: !hasPrivacyFlag(existingUser.flags, PRIVACY_FLAGS.TOP_TRACKS),
+        albums: !hasPrivacyFlag(existingUser.flags, PRIVACY_FLAGS.TOP_ALBUMS),
+        artists: !hasPrivacyFlag(existingUser.flags, PRIVACY_FLAGS.TOP_ARTISTS),
+        genres: !hasPrivacyFlag(existingUser.flags, PRIVACY_FLAGS.TOP_GENRES),
+      };
+
       const mutualArtists = targetStats.stats.artists.filter((targetArtist) =>
         selfStats.stats.artists.some(
           (selfArtist) => selfArtist.id === targetArtist.id,
         ),
       );
+
       const mutualTracks = targetStats.stats.tracks.filter((targetTrack) =>
         selfStats.stats.tracks.some(
           (selfTrack) => selfTrack.id === targetTrack.id,
         ),
       );
+
       const mutualAlbums = targetStats.stats.albums.filter((targetAlbum) =>
         selfStats.stats.albums.some(
           (selfAlbum) => selfAlbum.id === targetAlbum.id,
         ),
       );
+
       const mutualGenres = targetStats.stats.genres.filter((targetGenre) =>
         selfStats.stats.genres.some((selfGenre) => selfGenre === targetGenre),
       );
 
       return {
+        users: {
+          target: existingUser,
+          self: ctx.user,
+        },
         similarities: {
-          artists: mutualArtists,
-          tracks: mutualTracks,
-          albums: mutualAlbums,
-          genres: mutualGenres,
+          artists: privacySettings.artists
+            ? mutualArtists
+            : { message: "This user does not share artists" },
+          tracks: privacySettings.tracks
+            ? mutualTracks
+            : { message: "This user does not share tracks" },
+          albums: privacySettings.albums
+            ? mutualAlbums
+            : { message: "This user does not share albums" },
+          genres: privacySettings.genres
+            ? mutualGenres
+            : { message: "This user does not share genres" },
         },
       };
     }),

@@ -10,7 +10,7 @@ import {
 
 interface TimeRangeSelectorProps {
   timeRange: TIME_RANGE;
-  onTimeRangeChange: (value: TIME_RANGE) => Promise<void>;
+  onTimeRangeChange: (value: TIME_RANGE) => void;
   isLoading: boolean;
 }
 
