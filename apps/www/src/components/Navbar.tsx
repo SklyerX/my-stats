@@ -2,6 +2,7 @@ import type { User } from "@workspace/database/schema";
 import Link from "next/link";
 import { buttonVariants } from "@workspace/ui/components/button";
 import UserDropdown from "./UserDropdown";
+import Search from "./search";
 
 interface Props {
   user?: User | null;
@@ -16,7 +17,8 @@ export default function Navbar({ user }: Props) {
             MyStats
           </Link>
         </div>
-        <div>
+        <div className="flex items-center gap-4">
+          <Search />
           {user ? (
             <UserDropdown user={user} />
           ) : (

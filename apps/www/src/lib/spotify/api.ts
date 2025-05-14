@@ -12,6 +12,11 @@ import type {
 import { SPOTIFY_BASE_API } from "../constants";
 import { tryCatch } from "../try-catch";
 
+interface SearchOptions extends Omit<SearchContentParams, "query" | "type"> {
+  limit?: number;
+  offset?: number;
+}
+
 export class SpotifyAPI {
   private accessToken: string;
 
@@ -136,5 +141,19 @@ export class SpotifyAPI {
     if (error) return null;
 
     return data.items;
+  }
+
+  async searchAll(
+    query: string,
+    type: ["track", "artist", "album"],
+    options: SearchOptions,
+  ): Promise<SearchContentResponse> {
+    const search = await this.request<SearchContentResponse>("/search", {
+      q: query,
+      type,
+      ...options,
+    });
+
+    return search;
   }
 }

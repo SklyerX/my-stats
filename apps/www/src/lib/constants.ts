@@ -17,6 +17,8 @@ export const CACHE_KEYS = {
   albumData: (albumId: string) => `album:${albumId}`,
   playback: (userId: string) => `playback:${userId}`,
   commits: () => "commits",
+  search: (term: string) => `search:${term}`,
+  spotifySearch: (term: string) => `spotify:search:${term}`,
 };
 
 export const CACHE_TIMES = {
@@ -30,6 +32,8 @@ export const CACHE_TIMES = {
   trackAudioFeatures: 86400,
   trackAudioFeaturesQueue: 300,
   commits: 3600,
+  search: 7200,
+  spotifySearch: 21600,
 };
 
 export const TIME_RANGE_TEXT: Record<TIME_RANGE, string> = {

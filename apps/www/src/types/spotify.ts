@@ -270,7 +270,7 @@ export type SavedTracksResponse = Pagination<SavedTrack>;
 // Complete search response type
 export interface SearchContentResponse {
   tracks?: Pagination<Track>;
-  artists?: Pagination<SimplifiedArtist>;
+  artists?: Pagination<Artist>;
   albums?: Pagination<Album>;
   // * Currently unused
 

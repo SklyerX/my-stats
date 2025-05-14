@@ -13,6 +13,7 @@ import { logger } from "@/lib/logger";
 import { AudioFeaturesEngine } from "@/lib/engine/audio-features";
 import { MusicBrainzMapper } from "@/lib/engine/music-brainz-map";
 import type { SimplifiedArtist, Track } from "@/types/spotify";
+import { sql } from "@workspace/database/drizzle";
 
 type Artist = {
   id: string;
@@ -222,17 +223,26 @@ export const tracksRouter = router({
         );
         const track = mapSpotifyTrack(spotifyTrack);
 
-        await db.insert(tracks).values({
-          trackId: track.trackId,
-          name: track.name,
-          album: track.album,
-          albumId: spotifyTrack.album.id,
-          artist: track.artists[0]?.name ?? "Unknown",
-          isrc: track.isrc,
-          duration: track.duration,
-          imageUrl: track.imageUrl,
-          popularity: track.popularity,
-        });
+        await db
+          .insert(tracks)
+          .values({
+            trackId: track.trackId,
+            name: track.name,
+            album: track.album,
+            albumId: spotifyTrack.album.id,
+            artist: track.artists[0]?.name ?? "Unknown",
+            isrc: track.isrc,
+            duration: track.duration,
+            imageUrl: track.imageUrl,
+            popularity: track.popularity,
+          })
+          .onConflictDoUpdate({
+            target: tracks.trackId,
+            set: {
+              popularity: sql`excluded.popularity`,
+              updatedAt: sql`excluded.updated_at`,
+            },
+          });
 
         const artistsData = spotifyTrack.artists.map((artist, index) => ({
           artistId: artist.id,

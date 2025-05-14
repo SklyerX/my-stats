@@ -4,6 +4,26 @@ import { TRPCError } from "@trpc/server";
 import type { Activity, CommitResponse } from "./types";
 import { redis } from "@/lib/redis";
 import { CACHE_KEYS, CACHE_TIMES } from "@/lib/constants";
+import { z } from "zod";
+import { db } from "@workspace/database/connection";
+import {
+  type Albums,
+  type Artists,
+  type Track,
+  type User,
+  albums,
+  artists,
+  tracks,
+  users,
+} from "@workspace/database/schema";
+import { like, or } from "@workspace/database/drizzle";
+import { SpotifyAPI } from "@/lib/spotify/api";
+import { getSystemAccessToken } from "@/lib/spotify/system";
+import type {
+  Track as SpotifyTrack,
+  Artist as SpotifyArtist,
+  Album as SpotifyAlbum,
+} from "@/types/spotify";
 
 export const internalRouter = router({
   getCommits: publicProcedure.query(async () => {
@@ -92,4 +112,118 @@ export const internalRouter = router({
 
     return commits;
   }),
+  search: publicProcedure
+    .input(z.object({ query: z.string() }))
+    .query(async ({ input: { query } }) => {
+      const cacheKey = CACHE_KEYS.search(query);
+      const cache = await redis.get(cacheKey);
+
+      await redis.zincrby("popular_searches", 1, query);
+
+      if (cache)
+        return cache as Promise<{
+          artists: Artists[];
+          albums: Albums[];
+          tracks: Track[];
+          users: User[];
+        }>;
+
+      const searchPattern = `%${query}%`;
+
+      const {
+        "0": artistsResults,
+        "1": albumsResults,
+        "2": tracksResults,
+        "3": usersResults,
+      } = await db.batch([
+        db
+          .select()
+          .from(artists)
+          .where(like(artists.name, searchPattern))
+          .limit(15),
+        db
+          .select()
+          .from(albums)
+          .where(like(albums.name, searchPattern))
+          .limit(15),
+        db
+          .select()
+          .from(tracks)
+          .where(like(tracks.name, searchPattern))
+          .limit(15),
+        db
+          .select()
+          .from(users)
+          .where(
+            or(
+              like(users.username, searchPattern),
+              like(users.slug, searchPattern),
+            ),
+          )
+          .limit(15),
+      ]);
+
+      const data = {
+        artists: artistsResults,
+        albums: albumsResults,
+        tracks: tracksResults,
+        users: usersResults,
+      };
+
+      const searchCount = (await redis.zscore("popular_searches", query)) || 0;
+
+      let cacheTTL = CACHE_TIMES.search;
+
+      if (searchCount > 100)
+        // Default 2 hours
+        cacheTTL = 14400;
+      if (searchCount > 500)
+        // 4 hours for popular searches
+        cacheTTL = 28800; // 8 hours for very popular searches
+
+      await redis.set(cacheKey, data, {
+        ex: cacheTTL,
+      });
+
+      return data;
+    }),
+  spotifySearch: publicProcedure
+    .input(z.object({ query: z.string() }))
+    .query(async ({ input: { query } }) => {
+      const cacheKey = CACHE_KEYS.spotifySearch(query);
+      const cache = await redis.get(cacheKey);
+
+      if (cache)
+        return cache as Promise<{
+          artists: SpotifyArtist[];
+          albums: SpotifyAlbum[];
+          tracks: SpotifyTrack[];
+        }>;
+
+      const accessToken = await getSystemAccessToken();
+
+      const spotifyApi = new SpotifyAPI(accessToken);
+
+      const searchResults = await spotifyApi.searchAll(
+        query,
+        ["track", "artist", "album"],
+        {
+          limit: 15,
+        },
+      );
+
+      const data = {
+        artists: searchResults.artists?.items
+          ? searchResults.artists?.items
+          : [],
+        albums: searchResults.albums?.items ? searchResults.albums?.items : [],
+        tracks: searchResults.tracks?.items ? searchResults.tracks?.items : [],
+      };
+
+      await redis.set(cacheKey, data, {
+        ex: CACHE_TIMES.spotifySearch,
+      });
+
+      return data;
+    }),
 });
