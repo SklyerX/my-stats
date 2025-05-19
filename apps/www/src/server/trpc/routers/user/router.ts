@@ -563,7 +563,7 @@ export const userRouter = router({
 
         await saveExportToDb(db, key);
 
-        return downloadUrl;
+        return { downloadUrl };
       }
 
       const tracks = await fetchTracksFromSpotify(ctx.user.id, playlistId);
@@ -580,7 +580,7 @@ export const userRouter = router({
 
       await saveExportToDb(db, key);
 
-      return downloadUrl;
+      return { downloadUrl };
     }),
 });
 
