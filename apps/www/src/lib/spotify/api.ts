@@ -1,4 +1,5 @@
 import type {
+  UserPlaylistsResponse,
   AlbumResponse,
   Artist,
   ArtistAlbumsResponse,
@@ -8,6 +9,8 @@ import type {
   SearchContentParams,
   SearchContentResponse,
   Track,
+  SavedTracksResponse,
+  PlaylistContentResponse,
 } from "@/types/spotify";
 import { SPOTIFY_BASE_API } from "../constants";
 import { tryCatch } from "../try-catch";
@@ -155,5 +158,29 @@ export class SpotifyAPI {
     });
 
     return search;
+  }
+
+  async getUserPlaylists(userId: string, options?: SearchOptions) {
+    const playlists = await this.request<UserPlaylistsResponse>(
+      `/users/${userId}/playlists`,
+      {
+        ...options,
+      },
+    );
+    return playlists;
+  }
+
+  async getUserSavedTracks(options?: SearchOptions) {
+    const savedTracks = await this.request<SavedTracksResponse>("/me/tracks", {
+      ...options,
+    });
+    return savedTracks;
+  }
+
+  async getPlaylistContent(playlistId: string) {
+    const content = await this.request<PlaylistContentResponse>(
+      `/playlists/${playlistId}`,
+    );
+    return content;
   }
 }

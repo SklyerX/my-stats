@@ -4,8 +4,8 @@ export interface ExternalUrls {
 
 export interface SpotifyImage {
   url: string;
-  width: number;
-  height: number;
+  width: number | null;
+  height: number | null;
 }
 
 export interface SimplifiedArtist {
@@ -220,6 +220,27 @@ export interface PlaylistTracksResponse {
   previous: string | null;
   total: number;
   items: PlaylistItem[];
+}
+
+export interface PlaylistContentResponse {
+  collaborative: boolean;
+  description: string | null;
+  external_urls: ExternalUrls;
+  href: string;
+  id: string;
+  images: SpotifyImage[];
+  name: string;
+  owner: {
+    external_urls: ExternalUrls;
+    href: string;
+    id: string;
+    type: "user";
+    uri: string;
+    display_name: string | null;
+  };
+  public: boolean;
+  snapshot_id: string;
+  tracks: Pagination<PlaylistItem>;
 }
 
 export interface AlbumStats extends Album {

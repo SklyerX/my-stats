@@ -11,7 +11,8 @@
     "migrate": "tsx scripts/migrate.ts"
   },
   "dependencies": {
-    "@aws-sdk/client-s3": "^3.758.0",
+    "@aws-sdk/client-s3": "^3.812.0",
+    "@aws-sdk/s3-request-presigner": "^3.812.0",
     "@hookform/resolvers": "^5.0.1",
     "@sklyerx/size-convertor": "^0.0.1",
     "@tanstack/react-query": "^4.0.0",
