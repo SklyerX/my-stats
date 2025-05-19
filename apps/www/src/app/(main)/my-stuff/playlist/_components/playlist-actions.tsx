@@ -99,11 +99,6 @@ export default function PlaylistActions({ playlistId }: Props) {
           <SiRemovedotbg className="size-4" />
           Remove Duplicates
         </DropdownMenuItem>
-        <DropdownMenuSeparator />
-        <DropdownMenuItem className="flex items-center gap-2">
-          <FaSoundcloud className="size-4" />
-          Copy to SoundCloud
-        </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
   );
