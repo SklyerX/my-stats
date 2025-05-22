@@ -24,7 +24,7 @@ export default async function PlaylistPage({ params }: Props) {
   return (
     <div>
       <Link
-        href="/playlists"
+        href="/my-stuff"
         className={buttonVariants({
           variant: "ghost",
           size: "sm",

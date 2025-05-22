@@ -183,4 +183,49 @@ export class SpotifyAPI {
     );
     return content;
   }
+
+  async removePlaylistItems(playlistId: string, uris: { uri: string }[]) {
+    const request = new Request(
+      `${SPOTIFY_BASE_API}/playlists/${playlistId}/tracks`,
+    );
+
+    request.headers.set("Authorization", `Bearer ${this.accessToken}`);
+    request.headers.set("Content-Type", "application/json");
+
+    const response = await fetch(request, {
+      method: "DELETE",
+      body: JSON.stringify({
+        tracks: uris,
+      }),
+    });
+
+    if (!response.ok) {
+      throw new Error(response.statusText);
+    }
+
+    return response.json();
+  }
+
+  async addPlaylistItems(playlistId: string, uris: string[]) {
+    const request = new Request(
+      `${SPOTIFY_BASE_API}/playlists/${playlistId}/tracks`,
+    );
+
+    request.headers.set("Authorization", `Bearer ${this.accessToken}`);
+    request.headers.set("Content-Type", "application/json");
+
+    const response = await fetch(request, {
+      method: "POST",
+      body: JSON.stringify({
+        uris,
+        position: 0,
+      }),
+    });
+
+    if (!response.ok) {
+      throw new Error(`Failed to add playlist items -> ${response.statusText}`);
+    }
+
+    return response.json();
+  }
 }

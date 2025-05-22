@@ -10,6 +10,8 @@ const SCOPES = [
   "playlist-read-private",
   "playlist-read-collaborative",
   "user-library-read",
+  "playlist-modify-public",
+  "playlist-modify-private",
 ];
 
 export async function GET(): Promise<Response> {
