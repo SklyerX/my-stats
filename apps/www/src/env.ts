@@ -25,6 +25,7 @@ export const env = createEnv({
     TWITCH_CLIENT_SECRET: z.string(),
     STEAM_WEB_API_KEY: z.string(),
     GITHUB_DEVELOPER_KEY: z.string(),
+    CRON_SECRET: z.string(),
   },
   client: {},
   runtimeEnv: {
@@ -50,5 +51,6 @@ export const env = createEnv({
     TWITCH_CLIENT_SECRET: process.env.TWITCH_CLIENT_SECRET,
     STEAM_WEB_API_KEY: process.env.STEAM_WEB_API_KEY,
     GITHUB_DEVELOPER_KEY: process.env.GITHUB_DEVELOPER_KEY,
+    CRON_SECRET: process.env.CRON_SECRET,
   },
 });

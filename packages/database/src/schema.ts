@@ -463,6 +463,12 @@ export const webhookLogs = pgTable("webhook_logs", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+export const downloadExports = pgTable("download_exports", {
+  id: serial("id").primaryKey(),
+  s3Key: text("s3_key").notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
 export const userRelations = relations(users, ({ one, many }) => ({
   sessions: many(sessions),
   tokens: one(tokens, {

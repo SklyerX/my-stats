@@ -21,7 +21,13 @@ export default async function TrackPage({ params }: Props) {
   const { trackId } = await params;
   const data = await serverClient.tracks.getTrackData(trackId);
 
-  if (!data.track) return <>I have nothing</>;
+  if (!data.track)
+    return (
+      <div>
+        Sorry it looks this track doesn't exist in our database. Try refreshing
+        your browser or come back at a different time
+      </div>
+    );
 
   return (
     <div className="px-5 sm:px-0">

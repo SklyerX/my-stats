@@ -1,16 +1,25 @@
 import type {
+  UserPlaylistsResponse,
   AlbumResponse,
   Artist,
   ArtistAlbumsResponse,
   ArtistTopTracksResponse,
-  PlaybackResponse,
   RecentlyPlayedResponse,
   SearchContentParams,
   SearchContentResponse,
   Track,
+  SavedTracksResponse,
+  PlaylistContentResponse,
+  PlaybackResponse,
+  PlaylistDetailsResponse,
 } from "@/types/spotify";
 import { SPOTIFY_BASE_API } from "../constants";
 import { tryCatch } from "../try-catch";
+
+interface SearchOptions extends Omit<SearchContentParams, "query" | "type"> {
+  limit?: number;
+  offset?: number;
+}
 
 export class SpotifyAPI {
   private accessToken: string;
@@ -136,5 +145,163 @@ export class SpotifyAPI {
     if (error) return null;
 
     return data.items;
+  }
+
+  async searchAll(
+    query: string,
+    type: ["track", "artist", "album"],
+    options: SearchOptions,
+  ): Promise<SearchContentResponse> {
+    const search = await this.request<SearchContentResponse>("/search", {
+      q: query,
+      type,
+      ...options,
+    });
+
+    return search;
+  }
+
+  async getUserPlaylists(userId: string, options?: SearchOptions) {
+    const playlists = await this.request<UserPlaylistsResponse>(
+      `/users/${userId}/playlists`,
+      {
+        ...options,
+      },
+    );
+    return playlists;
+  }
+
+  async getUserSavedTracks(options?: SearchOptions) {
+    const savedTracks = await this.request<SavedTracksResponse>("/me/tracks", {
+      ...options,
+    });
+    return savedTracks;
+  }
+
+  async getPlaylistContent(playlistId: string) {
+    const content = await this.request<PlaylistContentResponse>(
+      `/playlists/${playlistId}`,
+    );
+    return content;
+  }
+
+  async getPlaylist(playlistId: string): Promise<PlaylistDetailsResponse> {
+    const playlist = await this.request<PlaylistDetailsResponse>(
+      `/playlists/${playlistId}`,
+    );
+
+    return playlist;
+  }
+
+  async removePlaylistItems(playlistId: string, uris: { uri: string }[]) {
+    const request = new Request(
+      `${SPOTIFY_BASE_API}/playlists/${playlistId}/tracks`,
+    );
+
+    request.headers.set("Authorization", `Bearer ${this.accessToken}`);
+    request.headers.set("Content-Type", "application/json");
+
+    const response = await fetch(request, {
+      method: "DELETE",
+      body: JSON.stringify({
+        tracks: uris,
+      }),
+    });
+
+    if (!response.ok) {
+      throw new Error(response.statusText);
+    }
+
+    return response.json();
+  }
+
+  async addPlaylistItems(
+    playlistId: string,
+    uris: string[],
+    data: { position?: number } = {},
+  ) {
+    const request = new Request(
+      `${SPOTIFY_BASE_API}/playlists/${playlistId}/tracks`,
+    );
+
+    request.headers.set("Authorization", `Bearer ${this.accessToken}`);
+    request.headers.set("Content-Type", "application/json");
+
+    const response = await fetch(request, {
+      method: "POST",
+      body: JSON.stringify({
+        uris,
+        ...data,
+      }),
+    });
+
+    if (!response.ok) {
+      throw new Error(`Failed to add playlist items -> ${response.statusText}`);
+    }
+
+    return response.json();
+  }
+
+  async createPlaylist(data: {
+    name: string;
+    description: string;
+    public: boolean;
+  }): Promise<PlaylistDetailsResponse> {
+    const request = new Request(
+      `${SPOTIFY_BASE_API}/users/{user_id}/playlists`,
+    );
+
+    request.headers.set("Authorization", `Bearer ${this.accessToken}`);
+    request.headers.set("Content-Type", "application/json");
+
+    const response = await fetch(request, {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+
+    if (!response.ok) {
+      throw new Error(`Failed to add playlist items -> ${response.statusText}`);
+    }
+
+    const responseData = (await response.json()) as PlaylistDetailsResponse;
+
+    return responseData;
+  }
+
+  async addToLibrary(ids: Array<string>): Promise<{ success: boolean }> {
+    // Add some logging to see what's actually happening
+    console.log("Access token:", this.accessToken?.substring(0, 20) + "...");
+    console.log("Track IDs:", ids);
+    console.log(
+      "Full URL:",
+      `${SPOTIFY_BASE_API}/me/tracks?ids=${ids.join(",")}`,
+    );
+
+    const request = new Request(
+      `${SPOTIFY_BASE_API}/me/tracks?ids=${ids.join(",")}`,
+      {
+        method: "PUT",
+      },
+    );
+
+    request.headers.set("Authorization", `Bearer ${this.accessToken}`);
+    request.headers.set("Content-Type", "application/json");
+
+    const response = await fetch(request);
+
+    // Log the full response details
+    console.log("Response status:", response.status);
+    console.log(
+      "Response headers:",
+      Object.fromEntries(response.headers.entries()),
+    );
+
+    if (!response.ok) {
+      const errorBody = await response.text();
+      console.log("Error response body:", errorBody);
+      throw new Error(`Failed to add to library -> ${response.statusText}`);
+    }
+
+    return { success: true };
   }
 }

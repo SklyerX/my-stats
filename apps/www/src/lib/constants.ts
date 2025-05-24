@@ -17,6 +17,13 @@ export const CACHE_KEYS = {
   albumData: (albumId: string) => `album:${albumId}`,
   playback: (userId: string) => `playback:${userId}`,
   commits: () => "commits",
+  search: (term: string) => `search:${term}`,
+  spotifySearch: (term: string) => `spotify:search:${term}`,
+  userLibrary: (userId: string) => `user-library:${userId}`,
+  playlist: (userId: string, playlistId: string) =>
+    `playlist:${userId}:${playlistId}`,
+  playlistTracks: (userId: string, playlistId: string) =>
+    `playlist-tracks:${userId}:${playlistId}`,
 };
 
 export const CACHE_TIMES = {
@@ -30,6 +37,10 @@ export const CACHE_TIMES = {
   trackAudioFeatures: 86400,
   trackAudioFeaturesQueue: 300,
   commits: 3600,
+  search: 7200,
+  spotifySearch: 21600,
+  userLibrary: 1800,
+  userPlaylist: 172800,
 };
 
 export const TIME_RANGE_TEXT: Record<TIME_RANGE, string> = {
