@@ -25,7 +25,8 @@
     "TWITCH_CLIENT_SECRET",
     "STEAM_WEB_API_KEY",
     "GITHUB_DEVELOPER_KEY",
-    "FORCE_DOMAINS"
+    "FORCE_DOMAINS",
+    "CRON_SECRET"
   ],
   "tasks": {
     "build": {
