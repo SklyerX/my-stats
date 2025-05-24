@@ -3,7 +3,7 @@ import { type RecentlyPlayed, topStatsSchema } from "./types";
 import { getValidSpotifyToken } from "@/lib/spotify/tokens";
 import { redis } from "@/lib/redis";
 import { CACHE_KEYS, CACHE_TIMES, SPOTIFY_BASE_API } from "@/lib/constants";
-import { db } from "@workspace/database/connection";
+import { db, type db as DBType } from "@workspace/database/connection";
 import { TRPCError } from "@trpc/server";
 import { headers } from "next/headers";
 import type { InternalTopUserStats } from "@/types/response";
@@ -13,12 +13,35 @@ import {
   TIME_RANGES,
   type PlaybackResponse,
   type RecentlyPlayedResponse,
+  type UserPlaylistsResponse,
+  type SimplifiedArtist,
+  type PlaylistContentResponse,
+  type SpotifyImage,
+  type ExternalUrls,
+  type PlaylistItem,
+  type Artist,
 } from "@/types/spotify";
 import { SpotifyAPI } from "@/lib/spotify/api";
 import { protectedProcedure } from "../../middleware/auth";
 import { getUserTopStats } from "@/lib/spotify/user-stats-service";
 import { hasPrivacyFlag, PRIVACY_FLAGS } from "@/lib/flags";
 import { getCurrentSession } from "@/auth/session";
+import { sleep } from "@/lib/utils";
+import { artists, downloadExports } from "@workspace/database/schema";
+import { inArray } from "@workspace/database/drizzle";
+import { processArtistTask } from "@/trigger/process-artist";
+import { GetObjectCommand, PutObjectCommand } from "@aws-sdk/client-s3";
+import { env } from "@/env";
+import { randomUUID } from "node:crypto";
+import { s3 } from "@/lib/s3-client";
+import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
+import { revalidatePath } from "next/cache";
+import {
+  calculatePlaylistAnalytics,
+  getPlaylistAnalytics,
+} from "./services/playlist";
+import { fetchTracksFromSpotify } from "./services/tracks";
+import { tryCatch } from "@/lib/try-catch";
 
 export const userRouter = router({
   top: publicProcedure
@@ -346,4 +369,345 @@ export const userRouter = router({
         },
       };
     }),
+  getPlaylists: protectedProcedure.query(async ({ ctx }) => {
+    const cacheKey = CACHE_KEYS.userLibrary(ctx.user.id);
+    const cache = await redis.get(cacheKey);
+
+    if (cache) return cache as UserPlaylistsResponse["items"];
+
+    const accessToken = await getValidSpotifyToken(ctx.user.id);
+
+    const spotifyApi = new SpotifyAPI(accessToken);
+
+    const playlists = await spotifyApi.getUserPlaylists(ctx.user.spotifyId);
+
+    await redis.set(cacheKey, playlists.items, {
+      ex: CACHE_TIMES.userLibrary,
+    });
+
+    return playlists.items;
+  }),
+  getPlaylistStats: protectedProcedure
+    .input(z.object({ playlistId: z.string() }))
+    .query(async ({ input, ctx }) => {
+      const { playlistId } = input;
+
+      const cacheKey = CACHE_KEYS.playlist(ctx.user.id, playlistId);
+      const cache = await redis.get(cacheKey);
+
+      if (cache)
+        return cache as Awaited<
+          ReturnType<typeof getPlaylistAnalytics>
+        >["data"];
+
+      const accessToken = await getValidSpotifyToken(ctx.user.id);
+
+      const { data, tracks } = await getPlaylistAnalytics(
+        ctx.user.id,
+        playlistId,
+        accessToken,
+      );
+
+      await redis.set(cacheKey, data, {
+        ex: CACHE_TIMES.userPlaylist,
+      });
+
+      await redis.set(
+        CACHE_KEYS.playlistTracks(ctx.user.id, playlistId),
+        tracks,
+        {
+          ex: CACHE_TIMES.userPlaylist,
+        },
+      );
+
+      return data;
+    }),
+  downloadPlaylist: protectedProcedure
+    .input(
+      z.object({ playlistId: z.string(), fileType: z.enum(["json", "csv"]) }),
+    )
+    .mutation(async ({ input, ctx }) => {
+      const { fileType, playlistId } = input;
+
+      const cacheKey = CACHE_KEYS.playlistTracks(ctx.user.id, playlistId);
+      const cache = (await redis.get(cacheKey)) as PlaylistItem[];
+
+      if (cache) {
+        const { downloadUrl, key } = await processAndUploadTracks(
+          cache,
+          fileType,
+          playlistId,
+        );
+
+        await saveExportToDb(db, key);
+
+        return { downloadUrl };
+      }
+
+      const tracks = await fetchTracksFromSpotify(ctx.user.id, playlistId);
+
+      await redis.set(cacheKey, tracks, {
+        ex: CACHE_TIMES.userPlaylist,
+      });
+
+      const { downloadUrl, key } = await processAndUploadTracks(
+        tracks,
+        fileType,
+        playlistId,
+      );
+
+      await saveExportToDb(db, key);
+
+      return { downloadUrl };
+    }),
+  removeDuplicates: protectedProcedure
+    .input(z.object({ playlistId: z.string() }))
+    .mutation(async ({ input, ctx }) => {
+      try {
+        const { playlistId } = input;
+        const userId = ctx.user.id;
+        const cacheKey = CACHE_KEYS.playlistTracks(userId, playlistId);
+
+        const cache = (await redis.get(cacheKey)) as PlaylistItem[];
+
+        const accessToken = await getValidSpotifyToken(userId);
+        const spotifyApi = new SpotifyAPI(accessToken);
+
+        const tracks =
+          cache ||
+          (await fetchTracksFromSpotify(userId, playlistId, accessToken));
+
+        const filteredTracks = removeDuplicatesAndGetTracks(tracks);
+        const uniqueIds = filteredTracks.map(
+          (track) => `spotify:track:${track.track.id}`,
+        );
+
+        const allIds = tracks.map(
+          (item) => `spotify:${item.track.type}:${item.track.id}`,
+        );
+
+        await spotifyApi.removePlaylistItems(
+          playlistId,
+          allIds.map((id) => ({ uri: id })),
+        );
+        await spotifyApi.addPlaylistItems(playlistId, uniqueIds, {
+          position: 0,
+        });
+
+        const newTracks = filteredTracks;
+
+        await redis.set(cacheKey, newTracks, {
+          ex: CACHE_TIMES.userPlaylist,
+        });
+
+        const playlistCacheKey = CACHE_KEYS.playlist(ctx.user.id, playlistId);
+        const existingPlaylistCache = (await redis.get(
+          playlistCacheKey,
+        )) as Awaited<ReturnType<typeof getPlaylistAnalytics>>["data"];
+
+        if (existingPlaylistCache) {
+          const updatedAnalytics = await calculatePlaylistAnalytics(
+            newTracks,
+            accessToken,
+          );
+
+          const updatedCacheData = {
+            ...updatedAnalytics,
+            playlist: existingPlaylistCache.playlist,
+          };
+
+          console.log(updatedCacheData, "VS", existingPlaylistCache);
+
+          await redis.set(playlistCacheKey, updatedCacheData, {
+            ex: CACHE_TIMES.userPlaylist,
+          });
+        }
+
+        revalidatePath(`/my-stuff/playlist/${playlistId}`);
+
+        return { success: true };
+      } catch (err) {
+        console.error(err);
+        return { success: false };
+      }
+    }),
+  recentlyPlayedActions: protectedProcedure
+    .input(
+      z.object({
+        playlistId: z.string().optional(),
+        action: z.enum(["add-to-playlist", "add-to-likes", "create-playlist"]),
+        trackIds: z.array(z.string()),
+      }),
+    )
+    .mutation(async ({ input, ctx }) => {
+      const { action, trackIds } = input;
+
+      const accessToken = await getValidSpotifyToken(ctx.user.id);
+      const spotifyApi = new SpotifyAPI(accessToken);
+
+      switch (action) {
+        case "create-playlist": {
+          const playlist = await spotifyApi.createPlaylist({
+            name: "Recently Played",
+            description: "Tracks from your recently played",
+            public: false,
+          });
+
+          await spotifyApi.addPlaylistItems(playlist.id, trackIds);
+          break;
+        }
+        case "add-to-playlist": {
+          if (!input.playlistId) {
+            throw new TRPCError({
+              code: "BAD_REQUEST",
+              message: "Playlist ID is required for this action",
+            });
+          }
+
+          const { data: playlist, error } = await tryCatch(
+            spotifyApi.getPlaylist(input.playlistId),
+          );
+
+          if (error) {
+            console.error("Error fetching playlist:", error);
+            throw new TRPCError({
+              code: "NOT_FOUND",
+              message: "Playlist not found",
+            });
+          }
+
+          await spotifyApi.addPlaylistItems(
+            playlist.id,
+            trackIds.map((id) => `spotify:track:${id}`),
+          );
+          break;
+        }
+        case "add-to-likes": {
+          await spotifyApi.addToLibrary(trackIds);
+          break;
+        }
+      }
+    }),
 });
+
+function convertJSONToCSV(data: Record<string, unknown>[]) {
+  if (data.length === 0) return "";
+
+  const headers = data[0] ? Object.keys(data[0]) : [];
+  const csvRows = [];
+
+  csvRows.push(headers.join(","));
+
+  for (const row of data) {
+    const values = headers.map((header) => {
+      const val = row[header];
+      return `"${String(val).replace(/"/g, '""')}"`;
+    });
+    csvRows.push(values.join(","));
+  }
+
+  return csvRows.join("\n");
+}
+
+async function processAndUploadTracks(
+  tracks: PlaylistItem[],
+  fileType: string,
+  playlistId: string,
+): Promise<{ downloadUrl: string; key: string }> {
+  const fileData = formatTracksForExport(tracks, fileType, playlistId);
+  const { downloadUrl, key } = await uploadFileToS3(fileData);
+
+  return { downloadUrl, key };
+}
+
+function formatTracksForExport(
+  tracks: PlaylistItem[],
+  fileType: string,
+  playlistId: string,
+): FileContent {
+  const formattedData = tracks.map((item) => ({
+    is_local: item.is_local,
+    trackName: item.track.name,
+    spotifyTrackId: item.track.id,
+    trackArtist: item.track.artists[0]?.name,
+    trackArtistId: item.track.artists[0]?.id,
+    trackImageUrl: item.track.album.images[0]?.url,
+    addedBy: item.added_by.id,
+  }));
+
+  if (fileType === "csv") {
+    return {
+      fileContent: convertJSONToCSV(formattedData),
+      fileName: `data-export_${playlistId}.csv`,
+      contentType: "text/csv",
+    };
+  }
+
+  return {
+    fileContent: formattedData,
+    fileName: `data-export_${playlistId}.json`,
+    contentType: "application/json",
+  };
+}
+
+async function uploadFileToS3(
+  data: FileContent,
+): Promise<{ downloadUrl: string; key: string }> {
+  const key = `downloads/${randomUUID()}/${data.fileName}`;
+  const fileContent = serializeFileContent(data.fileContent);
+
+  const command = new PutObjectCommand({
+    Bucket: env.AWS_BUCKET_NAME,
+    Key: key,
+    Body: fileContent,
+    ContentType: data.contentType,
+  });
+
+  await s3.send(command);
+
+  const getCommand = new GetObjectCommand({
+    Bucket: env.AWS_BUCKET_NAME,
+    Key: key,
+  });
+
+  // biome-ignore lint/suspicious/noExplicitAny: Tried everything, for some reason it just doesn't understand that its the correct type
+  const downloadUrl = await getSignedUrl(s3 as any, getCommand, {
+    expiresIn: 3600,
+  });
+
+  return { downloadUrl, key };
+}
+
+async function saveExportToDb(db: typeof DBType, s3Key: string) {
+  await db.insert(downloadExports).values({
+    s3Key,
+  });
+}
+function removeDuplicatesAndGetTracks(items: PlaylistItem[]): PlaylistItem[] {
+  const seen = new Set<string>();
+  const uniqueTracks: PlaylistItem[] = [];
+
+  for (const item of items) {
+    if (!seen.has(item.track.id)) {
+      seen.add(item.track.id);
+      uniqueTracks.push(item);
+    }
+  }
+
+  return uniqueTracks;
+}
+
+function serializeFileContent(fileContent: unknown): Buffer {
+  const stringContent =
+    Array.isArray(fileContent) || typeof fileContent === "object"
+      ? JSON.stringify(fileContent)
+      : fileContent;
+
+  return Buffer.from(stringContent as string);
+}
+
+type FileContent = {
+  contentType: string;
+  fileContent: unknown;
+  fileName: string;
+};

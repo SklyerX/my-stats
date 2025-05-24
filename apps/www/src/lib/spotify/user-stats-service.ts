@@ -7,12 +7,16 @@ import { processArtistTask } from "@/trigger/process-artist";
 import type {
   Album,
   Artist,
+  PlaylistContentResponse,
+  PlaylistItem,
   StatsResponse,
   TIME_RANGE,
   Track,
 } from "@/types/spotify";
 import type { User } from "@workspace/database/schema";
 import { isDataVisible, PRIVACY_FLAGS } from "../flags";
+import { SpotifyAPI } from "./api";
+import { sleep } from "../utils";
 
 export async function getUserTopStats(
   user: User,
@@ -189,3 +193,57 @@ const buildResponseSingle = (
 
   return null;
 };
+
+export async function fetchAllPlaylistTracks(
+  playlistId: string,
+  userId: string,
+): Promise<PlaylistItem[]> {
+  const accessToken = await getValidSpotifyToken(userId);
+  const spotifyApi = new SpotifyAPI(accessToken);
+  const playlistContent = await spotifyApi.getPlaylistContent(playlistId);
+
+  const allTracks: PlaylistItem[] = [...playlistContent.tracks.items];
+
+  if (playlistContent.tracks.next) {
+    const additionalTracks = await fetchRemainingPlaylistTracks(
+      playlistContent.tracks.next,
+      accessToken,
+    );
+    allTracks.push(...additionalTracks);
+  }
+
+  return allTracks;
+}
+
+async function fetchRemainingPlaylistTracks(
+  initialNextUrl: string,
+  accessToken: string,
+): Promise<PlaylistItem[]> {
+  const collectedTracks: PlaylistItem[] = [];
+  let nextUrl = initialNextUrl;
+
+  while (nextUrl) {
+    console.log("Fetching next page:", nextUrl);
+
+    const req = new Request(nextUrl);
+    req.headers.set("Authorization", `Bearer ${accessToken}`);
+    const res = await fetch(req);
+
+    if (!res.ok) break;
+
+    const data = await res.json();
+    const items = data.items || data.tracks?.items;
+
+    if (!items) {
+      console.error("Unexpected response structure:", Object.keys(data));
+      break;
+    }
+
+    collectedTracks.push(...items);
+    nextUrl = data.next || data.tracks?.next;
+
+    if (nextUrl) await sleep(1000);
+  }
+
+  return collectedTracks;
+}

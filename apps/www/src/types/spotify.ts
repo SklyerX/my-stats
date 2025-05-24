@@ -4,8 +4,8 @@ export interface ExternalUrls {
 
 export interface SpotifyImage {
   url: string;
-  width: number;
-  height: number;
+  width: number | null;
+  height: number | null;
 }
 
 export interface SimplifiedArtist {
@@ -222,6 +222,27 @@ export interface PlaylistTracksResponse {
   items: PlaylistItem[];
 }
 
+export interface PlaylistContentResponse {
+  collaborative: boolean;
+  description: string | null;
+  external_urls: ExternalUrls;
+  href: string;
+  id: string;
+  images: SpotifyImage[];
+  name: string;
+  owner: {
+    external_urls: ExternalUrls;
+    href: string;
+    id: string;
+    type: "user";
+    uri: string;
+    display_name: string | null;
+  };
+  public: boolean;
+  snapshot_id: string;
+  tracks: Pagination<PlaylistItem>;
+}
+
 export interface AlbumStats extends Album {
   occurrences: number;
 }
@@ -292,6 +313,34 @@ export interface SearchContentParams {
   // | "artist";
   market?: string;
   include_external?: "audio";
+}
+
+export interface PlaylistDetailsResponse {
+  collaborative: boolean;
+  description: string | null;
+  external_urls: ExternalUrls;
+  followers: {
+    href: string | null;
+    total: number;
+  };
+  href: string;
+  id: string;
+  images: SpotifyImage[];
+  primary_color: string | null;
+  name: string;
+  type: "playlist";
+  uri: string;
+  owner: {
+    href: string;
+    id: string;
+    type: "user";
+    uri: string;
+    display_name: string | null;
+    external_urls: ExternalUrls;
+  };
+  public: boolean;
+  snapshot_id: string;
+  tracks: Pagination<PlaylistItem>;
 }
 
 type EnsureProperties<T, K extends keyof T> = T & { [P in K]-?: T[P] };

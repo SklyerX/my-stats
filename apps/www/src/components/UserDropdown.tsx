@@ -8,7 +8,7 @@ import {
 } from "@workspace/ui/components/dropdown-menu";
 import Link from "next/link";
 
-import { SettingsIcon, UserIcon } from "lucide-react";
+import { BoxIcon, SettingsIcon, UserIcon } from "lucide-react";
 import { FiTerminal } from "react-icons/fi";
 import UserLogoutButton from "./UserLogoutButton";
 import { getUrl } from "@/lib/utils";
@@ -44,6 +44,12 @@ export default function UserDropdown({ user }: Props) {
           >
             <UserIcon className="size-4" />
             Profile
+          </Link>
+        </DropdownMenuItem>
+        <DropdownMenuItem>
+          <Link href="/my-stuff" className="flex items-center gap-2 w-full">
+            <BoxIcon className="size-4" />
+            My Stuff
           </Link>
         </DropdownMenuItem>
         <DropdownMenuSeparator />
