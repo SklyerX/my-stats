@@ -315,6 +315,34 @@ export interface SearchContentParams {
   include_external?: "audio";
 }
 
+export interface PlaylistDetailsResponse {
+  collaborative: boolean;
+  description: string | null;
+  external_urls: ExternalUrls;
+  followers: {
+    href: string | null;
+    total: number;
+  };
+  href: string;
+  id: string;
+  images: SpotifyImage[];
+  primary_color: string | null;
+  name: string;
+  type: "playlist";
+  uri: string;
+  owner: {
+    href: string;
+    id: string;
+    type: "user";
+    uri: string;
+    display_name: string | null;
+    external_urls: ExternalUrls;
+  };
+  public: boolean;
+  snapshot_id: string;
+  tracks: Pagination<PlaylistItem>;
+}
+
 type EnsureProperties<T, K extends keyof T> = T & { [P in K]-?: T[P] };
 
 // Type function that makes certain properties required based on the search types

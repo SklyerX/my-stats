@@ -41,6 +41,7 @@ import {
   getPlaylistAnalytics,
 } from "./services/playlist";
 import { fetchTracksFromSpotify } from "./services/tracks";
+import { tryCatch } from "@/lib/try-catch";
 
 export const userRouter = router({
   top: publicProcedure
@@ -489,7 +490,9 @@ export const userRouter = router({
           playlistId,
           allIds.map((id) => ({ uri: id })),
         );
-        await spotifyApi.addPlaylistItems(playlistId, uniqueIds);
+        await spotifyApi.addPlaylistItems(playlistId, uniqueIds, {
+          position: 0,
+        });
 
         const newTracks = filteredTracks;
 
@@ -526,6 +529,63 @@ export const userRouter = router({
       } catch (err) {
         console.error(err);
         return { success: false };
+      }
+    }),
+  recentlyPlayedActions: protectedProcedure
+    .input(
+      z.object({
+        playlistId: z.string().optional(),
+        action: z.enum(["add-to-playlist", "add-to-likes", "create-playlist"]),
+        trackIds: z.array(z.string()),
+      }),
+    )
+    .mutation(async ({ input, ctx }) => {
+      const { action, trackIds } = input;
+
+      const accessToken = await getValidSpotifyToken(ctx.user.id);
+      const spotifyApi = new SpotifyAPI(accessToken);
+
+      switch (action) {
+        case "create-playlist": {
+          const playlist = await spotifyApi.createPlaylist({
+            name: "Recently Played",
+            description: "Tracks from your recently played",
+            public: false,
+          });
+
+          await spotifyApi.addPlaylistItems(playlist.id, trackIds);
+          break;
+        }
+        case "add-to-playlist": {
+          if (!input.playlistId) {
+            throw new TRPCError({
+              code: "BAD_REQUEST",
+              message: "Playlist ID is required for this action",
+            });
+          }
+
+          const { data: playlist, error } = await tryCatch(
+            spotifyApi.getPlaylist(input.playlistId),
+          );
+
+          if (error) {
+            console.error("Error fetching playlist:", error);
+            throw new TRPCError({
+              code: "NOT_FOUND",
+              message: "Playlist not found",
+            });
+          }
+
+          await spotifyApi.addPlaylistItems(
+            playlist.id,
+            trackIds.map((id) => `spotify:track:${id}`),
+          );
+          break;
+        }
+        case "add-to-likes": {
+          await spotifyApi.addToLibrary(trackIds);
+          break;
+        }
       }
     }),
 });
