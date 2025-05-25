@@ -95,7 +95,7 @@ You can rewrite the middleware to handle routes like `localhost:3000/api.stats.s
 
 ### Do NOT Forget
 
-If you host the site on something like Vercel and try to access it on your local machine you'll get a `Connection not found` error because the domain is pointing to a localhost on your machine. There is nothing with te hosting but your machine is searching for localhost.
+If you host the site on something like Vercel and try to access it on your local machine you'll get a `Connection not found` error because the domain is pointing to a localhost on your machine. There is nothing with the hosting provider but your machine is searching for localhost.
 
 ## 🤝 Contributing
 
