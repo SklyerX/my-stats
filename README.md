@@ -88,6 +88,15 @@ Location of hosts file:
 - Windows: `C:\Windows\System32\drivers\etc\hosts`
 - Mac/Linux: `/etc/hosts`
 
+Then your done! routes like `api.stats.skylerx.ir:3000` will now work seamlessly!
+
+OR:
+You can rewrite the middleware to handle routes like `localhost:3000/api.stats.skylerx.ir` they work the same
+
+### Do NOT Forget
+
+If you host the site on something like Vercel and try to access it on your local machine you'll get a `Connection not found` error because the domain is pointing to a localhost on your machine. There is nothing with te hosting but your machine is searching for localhost.
+
 ## 🤝 Contributing
 
 Contributions are welcome and encouraged! Feel free to:
@@ -119,5 +128,5 @@ Under the following terms:
 ---
 
 <div align="center">
-  <strong>Made with ❤️ for music lovers everywhere</strong>
+  <strong>Made with ❤️, ☕️, and a lot of 💤 for music lovers everywhere, by a music lover</strong>
 </div>

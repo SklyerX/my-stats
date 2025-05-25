@@ -33,7 +33,7 @@ export const internalRouter = router({
     if (cache) return cache as Activity[];
 
     const request = new Request(
-      "https://api.github.com/repos/sklyerx/bkmrks/commits",
+      "https://api.github.com/repos/sklyerx/my-stats/commits",
     );
 
     request.headers.append("Accept", "application/vnd.github+json");
