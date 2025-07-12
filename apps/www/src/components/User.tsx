@@ -8,7 +8,7 @@ export interface UserProps {
 
 export function User({ user }: UserProps) {
   return (
-    <Link href={`/user/${user.id}`}>
+    <Link href={`/${user.id}`}>
       <div className="aspect-square">
         <img
           src={user.image || "https://via.placeholder.com/1000"}
