@@ -14,22 +14,15 @@ import {
   type PlaybackResponse,
   type RecentlyPlayedResponse,
   type UserPlaylistsResponse,
-  type SimplifiedArtist,
-  type PlaylistContentResponse,
-  type SpotifyImage,
-  type ExternalUrls,
   type PlaylistItem,
-  type Artist,
 } from "@/types/spotify";
 import { SpotifyAPI } from "@/lib/spotify/api";
 import { protectedProcedure } from "../../middleware/auth";
 import { getUserTopStats } from "@/lib/spotify/user-stats-service";
 import { hasPrivacyFlag, PRIVACY_FLAGS } from "@/lib/flags";
 import { getCurrentSession } from "@/auth/session";
-import { sleep } from "@/lib/utils";
-import { artists, downloadExports } from "@workspace/database/schema";
-import { inArray } from "@workspace/database/drizzle";
-import { processArtistTask } from "@/trigger/process-artist";
+import { chunks, sleep } from "@/lib/utils";
+import { downloadExports } from "@workspace/database/schema";
 import { GetObjectCommand, PutObjectCommand } from "@aws-sdk/client-s3";
 import { env } from "@/env";
 import { randomUUID } from "node:crypto";
@@ -53,7 +46,7 @@ export const userRouter = router({
       const headersList = await headers();
 
       console.log(
-        `\n[${requestId}] ========= REQUEST START ${new Date().toISOString()} =========`,
+        `\n[${requestId}] ========= REQUEST START ${new Date().toISOString()} =========`
       );
 
       console.log(`[${requestId}] Headers:`, {
@@ -79,7 +72,7 @@ export const userRouter = router({
           where: (fields, { eq }) => eq(fields.slug, slug),
         });
         console.log(
-          `[${requestId}] DB lookup completed in ${Date.now() - dbStart}ms`,
+          `[${requestId}] DB lookup completed in ${Date.now() - dbStart}ms`
         );
 
         if (!existingUser) {
@@ -94,7 +87,7 @@ export const userRouter = router({
           existingUser,
           time_range,
           limit ?? 50,
-          offset ?? 50,
+          offset ?? 50
         );
 
         const { user } = await getCurrentSession();
@@ -131,7 +124,7 @@ export const userRouter = router({
       } catch (err) {
         console.error(`[${requestId}] ❌ ERROR:`, err);
         console.log(
-          `[${requestId}] ========= REQUEST ERROR END (${Date.now() - startTime}ms) =========\n`,
+          `[${requestId}] ========= REQUEST ERROR END (${Date.now() - startTime}ms) =========\n`
         );
 
         if (err instanceof TRPCError) {
@@ -163,7 +156,7 @@ export const userRouter = router({
 
       const isPrivacyEnabled = hasPrivacyFlag(
         existingUser.flags,
-        PRIVACY_FLAGS.RECENTLY_PLAYED,
+        PRIVACY_FLAGS.RECENTLY_PLAYED
       );
 
       if (isPrivacyEnabled && (!user || user.id !== existingUser.id)) return [];
@@ -178,12 +171,12 @@ export const userRouter = router({
       const accessToken = await getValidSpotifyToken(existingUser.id);
 
       const recentlyPlayedRequest = new Request(
-        `${SPOTIFY_BASE_API}/me/player/recently-played?limit=50`,
+        `${SPOTIFY_BASE_API}/me/player/recently-played?limit=50`
       );
 
       recentlyPlayedRequest.headers.set(
         "Authorization",
-        `Bearer ${accessToken}`,
+        `Bearer ${accessToken}`
       );
 
       const response = await fetch(recentlyPlayedRequest);
@@ -225,7 +218,7 @@ export const userRouter = router({
         { orderedItems, consumer_api_data },
         {
           ex: CACHE_TIMES.recentlyPlayed,
-        },
+        }
       );
 
       return orderedItems;
@@ -273,7 +266,7 @@ export const userRouter = router({
 
         const expirationSeconds = Math.max(
           1,
-          Math.floor(((rest.item?.duration_ms || 0) - rest.progress_ms) / 1000),
+          Math.floor(((rest.item?.duration_ms || 0) - rest.progress_ms) / 1000)
         );
 
         await redis.set(
@@ -281,7 +274,7 @@ export const userRouter = router({
           { ...rest, cachedAt: Date.now() },
           {
             ex: expirationSeconds,
-          },
+          }
         );
 
         return rest;
@@ -295,7 +288,7 @@ export const userRouter = router({
       z.object({
         slug: z.string(),
         timeRange: z.enum(TIME_RANGES).optional().default("short_term"),
-      }),
+      })
     )
     .query(async ({ input, ctx }) => {
       const { slug, timeRange } = input;
@@ -328,24 +321,24 @@ export const userRouter = router({
 
       const mutualArtists = targetStats.stats.artists.filter((targetArtist) =>
         selfStats.stats.artists.some(
-          (selfArtist) => selfArtist.id === targetArtist.id,
-        ),
+          (selfArtist) => selfArtist.id === targetArtist.id
+        )
       );
 
       const mutualTracks = targetStats.stats.tracks.filter((targetTrack) =>
         selfStats.stats.tracks.some(
-          (selfTrack) => selfTrack.id === targetTrack.id,
-        ),
+          (selfTrack) => selfTrack.id === targetTrack.id
+        )
       );
 
       const mutualAlbums = targetStats.stats.albums.filter((targetAlbum) =>
         selfStats.stats.albums.some(
-          (selfAlbum) => selfAlbum.id === targetAlbum.id,
-        ),
+          (selfAlbum) => selfAlbum.id === targetAlbum.id
+        )
       );
 
       const mutualGenres = targetStats.stats.genres.filter((targetGenre) =>
-        selfStats.stats.genres.some((selfGenre) => selfGenre === targetGenre),
+        selfStats.stats.genres.some((selfGenre) => selfGenre === targetGenre)
       );
 
       return {
@@ -405,7 +398,7 @@ export const userRouter = router({
       const { data, tracks } = await getPlaylistAnalytics(
         ctx.user.id,
         playlistId,
-        accessToken,
+        accessToken
       );
 
       await redis.set(cacheKey, data, {
@@ -417,14 +410,14 @@ export const userRouter = router({
         tracks,
         {
           ex: CACHE_TIMES.userPlaylist,
-        },
+        }
       );
 
       return data;
     }),
   downloadPlaylist: protectedProcedure
     .input(
-      z.object({ playlistId: z.string(), fileType: z.enum(["json", "csv"]) }),
+      z.object({ playlistId: z.string(), fileType: z.enum(["json", "csv"]) })
     )
     .mutation(async ({ input, ctx }) => {
       const { fileType, playlistId } = input;
@@ -436,7 +429,7 @@ export const userRouter = router({
         const { downloadUrl, key } = await processAndUploadTracks(
           cache,
           fileType,
-          playlistId,
+          playlistId
         );
 
         await saveExportToDb(db, key);
@@ -453,7 +446,7 @@ export const userRouter = router({
       const { downloadUrl, key } = await processAndUploadTracks(
         tracks,
         fileType,
-        playlistId,
+        playlistId
       );
 
       await saveExportToDb(db, key);
@@ -479,16 +472,16 @@ export const userRouter = router({
 
         const filteredTracks = removeDuplicatesAndGetTracks(tracks);
         const uniqueIds = filteredTracks.map(
-          (track) => `spotify:track:${track.track.id}`,
+          (track) => `spotify:track:${track.track.id}`
         );
 
         const allIds = tracks.map(
-          (item) => `spotify:${item.track.type}:${item.track.id}`,
+          (item) => `spotify:${item.track.type}:${item.track.id}`
         );
 
         await spotifyApi.removePlaylistItems(
           playlistId,
-          allIds.map((id) => ({ uri: id })),
+          allIds.map((id) => ({ uri: id }))
         );
         await spotifyApi.addPlaylistItems(playlistId, uniqueIds, {
           position: 0,
@@ -502,13 +495,13 @@ export const userRouter = router({
 
         const playlistCacheKey = CACHE_KEYS.playlist(ctx.user.id, playlistId);
         const existingPlaylistCache = (await redis.get(
-          playlistCacheKey,
+          playlistCacheKey
         )) as Awaited<ReturnType<typeof getPlaylistAnalytics>>["data"];
 
         if (existingPlaylistCache) {
           const updatedAnalytics = await calculatePlaylistAnalytics(
             newTracks,
-            accessToken,
+            accessToken
           );
 
           const updatedCacheData = {
@@ -537,7 +530,7 @@ export const userRouter = router({
         playlistId: z.string().optional(),
         action: z.enum(["add-to-playlist", "add-to-likes", "create-playlist"]),
         trackIds: z.array(z.string()),
-      }),
+      })
     )
     .mutation(async ({ input, ctx }) => {
       const { action, trackIds } = input;
@@ -551,6 +544,7 @@ export const userRouter = router({
             name: "Recently Played",
             description: "Tracks from your recently played",
             public: false,
+            userId: ctx.user.spotifyId,
           });
 
           await spotifyApi.addPlaylistItems(playlist.id, trackIds);
@@ -565,7 +559,7 @@ export const userRouter = router({
           }
 
           const { data: playlist, error } = await tryCatch(
-            spotifyApi.getPlaylist(input.playlistId),
+            spotifyApi.getPlaylist(input.playlistId)
           );
 
           if (error) {
@@ -578,7 +572,7 @@ export const userRouter = router({
 
           await spotifyApi.addPlaylistItems(
             playlist.id,
-            trackIds.map((id) => `spotify:track:${id}`),
+            trackIds.map((id) => `spotify:track:${id}`)
           );
           break;
         }
@@ -586,6 +580,99 @@ export const userRouter = router({
           await spotifyApi.addToLibrary(trackIds);
           break;
         }
+      }
+    }),
+  sortPlaylistByArtist: protectedProcedure
+    .input(
+      z.object({
+        playlistId: z.string(),
+        playlistName: z.string(),
+        createNew: z.boolean(),
+      })
+    )
+    .mutation(async ({ input, ctx }) => {
+      try {
+        const { playlistId, playlistName, createNew } = input;
+        const userId = ctx.user.id;
+        const cacheKey = CACHE_KEYS.playlistTracks(userId, playlistId);
+
+        const cache = (await redis.get(cacheKey)) as PlaylistItem[];
+
+        const accessToken = await getValidSpotifyToken(userId);
+        console.log(accessToken);
+        const spotifyApi = new SpotifyAPI(accessToken);
+
+        const tracks =
+          cache ||
+          (await fetchTracksFromSpotify(userId, playlistId, accessToken));
+
+        const filteredTracks = groupTracksByArtist(tracks);
+        const uniqueIds = filteredTracks.map(
+          (track) => `spotify:track:${track.track.id}`
+        );
+
+        const allIds = tracks.map(
+          (item) => `spotify:${item.track.type}:${item.track.id}`
+        );
+
+        const newTracks = filteredTracks;
+
+        if (createNew) {
+          console.log(ctx.user.id);
+          const data = await spotifyApi.createPlaylist({
+            name: `Sorted - ${playlistName}`,
+            description: "Generated by stats.skylerx.ir, grouped by artists",
+            public: false,
+            userId: ctx.user.spotifyId,
+          });
+
+          for (const chunk of chunks(uniqueIds, 100)) {
+            await spotifyApi.addPlaylistItems(data.id, chunk, {
+              position: 0,
+            });
+            await sleep(500);
+          }
+        } else {
+          await spotifyApi.removePlaylistItems(
+            playlistId,
+            allIds.map((id) => ({ uri: id }))
+          );
+          await spotifyApi.addPlaylistItems(playlistId, uniqueIds, {
+            position: 0,
+          });
+        }
+
+        await redis.set(cacheKey, newTracks, {
+          ex: CACHE_TIMES.userPlaylist,
+        });
+
+        const playlistCacheKey = CACHE_KEYS.playlist(ctx.user.id, playlistId);
+        const existingPlaylistCache = (await redis.get(
+          playlistCacheKey
+        )) as Awaited<ReturnType<typeof getPlaylistAnalytics>>["data"];
+
+        if (existingPlaylistCache) {
+          const updatedAnalytics = await calculatePlaylistAnalytics(
+            newTracks,
+            accessToken
+          );
+
+          const updatedCacheData = {
+            ...updatedAnalytics,
+            playlist: existingPlaylistCache.playlist,
+          };
+
+          console.log(updatedCacheData, "VS", existingPlaylistCache);
+
+          await redis.set(playlistCacheKey, updatedCacheData, {
+            ex: CACHE_TIMES.userPlaylist,
+          });
+        }
+
+        return { success: true };
+      } catch (err) {
+        console.error("SORT ERROR", err);
+        return { success: false };
       }
     }),
 });
@@ -612,7 +699,7 @@ function convertJSONToCSV(data: Record<string, unknown>[]) {
 async function processAndUploadTracks(
   tracks: PlaylistItem[],
   fileType: string,
-  playlistId: string,
+  playlistId: string
 ): Promise<{ downloadUrl: string; key: string }> {
   const fileData = formatTracksForExport(tracks, fileType, playlistId);
   const { downloadUrl, key } = await uploadFileToS3(fileData);
@@ -623,7 +710,7 @@ async function processAndUploadTracks(
 function formatTracksForExport(
   tracks: PlaylistItem[],
   fileType: string,
-  playlistId: string,
+  playlistId: string
 ): FileContent {
   const formattedData = tracks.map((item) => ({
     is_local: item.is_local,
@@ -651,7 +738,7 @@ function formatTracksForExport(
 }
 
 async function uploadFileToS3(
-  data: FileContent,
+  data: FileContent
 ): Promise<{ downloadUrl: string; key: string }> {
   const key = `downloads/${randomUUID()}/${data.fileName}`;
   const fileContent = serializeFileContent(data.fileContent);
@@ -683,6 +770,7 @@ async function saveExportToDb(db: typeof DBType, s3Key: string) {
     s3Key,
   });
 }
+
 function removeDuplicatesAndGetTracks(items: PlaylistItem[]): PlaylistItem[] {
   const seen = new Set<string>();
   const uniqueTracks: PlaylistItem[] = [];
@@ -695,6 +783,46 @@ function removeDuplicatesAndGetTracks(items: PlaylistItem[]): PlaylistItem[] {
   }
 
   return uniqueTracks;
+}
+
+interface PlaylistItemMap extends PlaylistItem {
+  index: number;
+}
+
+function groupTracksByArtist(items: PlaylistItem[]): PlaylistItem[] {
+  let artistCount = 0;
+
+  const artistIndexMap = new Map<string, number>();
+  const artistsMap = new Map<string, PlaylistItemMap[]>();
+
+  for (const item of items) {
+    const artist = item.track.artists[0]!;
+
+    if (!artistIndexMap.has(artist.id)) {
+      artistCount++;
+      artistIndexMap.set(artist.id, artistCount);
+    }
+
+    const index = artistIndexMap.get(artist.id)!;
+
+    const data: PlaylistItemMap = { ...item, index };
+
+    const arr = artistsMap.get(artist.id) || [];
+    arr.push(data);
+    artistsMap.set(artist.id, arr);
+  }
+
+  return Array.from(artistsMap, ([key, value]) => ({
+    key,
+    value: value.sort((a, b) => {
+      const albumCompare = a.track.album.name.localeCompare(b.track.album.name);
+      if (albumCompare !== 0) return albumCompare;
+      return a.track.album.name.localeCompare(b.track.album.name);
+    }),
+    index: artistIndexMap.get(key)!,
+  }))
+    .sort((a, b) => a.index - b.index)
+    .flatMap((group) => group.value);
 }
 
 function serializeFileContent(fileContent: unknown): Buffer {

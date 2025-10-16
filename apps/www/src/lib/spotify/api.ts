@@ -39,7 +39,7 @@ export class SpotifyAPI {
     }
 
     const request = new Request(
-      `${SPOTIFY_BASE_API}${endpoint}${queryParams.toString() ? `?${queryParams.toString()}` : ""}`,
+      `${SPOTIFY_BASE_API}${endpoint}${queryParams.toString() ? `?${queryParams.toString()}` : ""}`
     );
 
     request.headers.set("Authorization", `Bearer ${this.accessToken}`);
@@ -58,14 +58,14 @@ export class SpotifyAPI {
 
   async getArtistTopTracks(artistId: string) {
     const topTracks = await this.request<ArtistTopTracksResponse>(
-      `/artists/${artistId}/top-tracks?market=US`,
+      `/artists/${artistId}/top-tracks?market=US`
     );
     return topTracks;
   }
 
   async getArtistAlbums(artistId: string) {
     const albums = await this.request<ArtistAlbumsResponse>(
-      `/artists/${artistId}/albums?include_groups=album,single&limit=20`,
+      `/artists/${artistId}/albums?include_groups=album,single&limit=20`
     );
     return albums;
   }
@@ -77,14 +77,14 @@ export class SpotifyAPI {
 
   async getMultipleArtists(artistIds: string[]) {
     const data = await this.request<{ artists: Artist[] }>(
-      `/artists?ids=${artistIds.join(",")}`,
+      `/artists?ids=${artistIds.join(",")}`
     );
     return data.artists;
   }
 
   async getMultipleTracks(trackIds: string[]) {
     const data = await this.request<{ tracks: Track[] }>(
-      `/tracks?ids=${trackIds.join(",")}`,
+      `/tracks?ids=${trackIds.join(",")}`
     );
     return data.tracks;
   }
@@ -121,7 +121,7 @@ export class SpotifyAPI {
 
   async getPlayback() {
     const { data, error } = await tryCatch(
-      this.request<PlaybackResponse>("/me/player"),
+      this.request<PlaybackResponse>("/me/player")
     );
 
     if (error) return null;
@@ -132,14 +132,14 @@ export class SpotifyAPI {
   async getRecentlyPlayed(
     before: string | null,
     after: string | null,
-    limit?: number,
+    limit?: number
   ) {
     const { data, error } = await tryCatch(
       this.request<RecentlyPlayedResponse>("/me/player/recently-played", {
         before,
         after,
         limit,
-      }),
+      })
     );
 
     if (error) return null;
@@ -150,7 +150,7 @@ export class SpotifyAPI {
   async searchAll(
     query: string,
     type: ["track", "artist", "album"],
-    options: SearchOptions,
+    options: SearchOptions
   ): Promise<SearchContentResponse> {
     const search = await this.request<SearchContentResponse>("/search", {
       q: query,
@@ -166,7 +166,7 @@ export class SpotifyAPI {
       `/users/${userId}/playlists`,
       {
         ...options,
-      },
+      }
     );
     return playlists;
   }
@@ -180,14 +180,14 @@ export class SpotifyAPI {
 
   async getPlaylistContent(playlistId: string) {
     const content = await this.request<PlaylistContentResponse>(
-      `/playlists/${playlistId}`,
+      `/playlists/${playlistId}`
     );
     return content;
   }
 
   async getPlaylist(playlistId: string): Promise<PlaylistDetailsResponse> {
     const playlist = await this.request<PlaylistDetailsResponse>(
-      `/playlists/${playlistId}`,
+      `/playlists/${playlistId}`
     );
 
     return playlist;
@@ -195,7 +195,7 @@ export class SpotifyAPI {
 
   async removePlaylistItems(playlistId: string, uris: { uri: string }[]) {
     const request = new Request(
-      `${SPOTIFY_BASE_API}/playlists/${playlistId}/tracks`,
+      `${SPOTIFY_BASE_API}/playlists/${playlistId}/tracks`
     );
 
     request.headers.set("Authorization", `Bearer ${this.accessToken}`);
@@ -218,10 +218,10 @@ export class SpotifyAPI {
   async addPlaylistItems(
     playlistId: string,
     uris: string[],
-    data: { position?: number } = {},
+    data: { position?: number } = {}
   ) {
     const request = new Request(
-      `${SPOTIFY_BASE_API}/playlists/${playlistId}/tracks`,
+      `${SPOTIFY_BASE_API}/playlists/${playlistId}/tracks`
     );
 
     request.headers.set("Authorization", `Bearer ${this.accessToken}`);
@@ -236,6 +236,8 @@ export class SpotifyAPI {
     });
 
     if (!response.ok) {
+      const errorBody = await response.text();
+      console.log("Error response body:", errorBody);
       throw new Error(`Failed to add playlist items -> ${response.statusText}`);
     }
 
@@ -246,9 +248,10 @@ export class SpotifyAPI {
     name: string;
     description: string;
     public: boolean;
+    userId: string;
   }): Promise<PlaylistDetailsResponse> {
     const request = new Request(
-      `${SPOTIFY_BASE_API}/users/{user_id}/playlists`,
+      `${SPOTIFY_BASE_API}/users/${data.userId}/playlists`
     );
 
     request.headers.set("Authorization", `Bearer ${this.accessToken}`);
@@ -260,7 +263,9 @@ export class SpotifyAPI {
     });
 
     if (!response.ok) {
-      throw new Error(`Failed to add playlist items -> ${response.statusText}`);
+      const errorBody = await response.text();
+      console.log("Error response body:", errorBody);
+      throw new Error(`Failed to create a playlist -> ${response.statusText}`);
     }
 
     const responseData = (await response.json()) as PlaylistDetailsResponse;
@@ -274,14 +279,14 @@ export class SpotifyAPI {
     console.log("Track IDs:", ids);
     console.log(
       "Full URL:",
-      `${SPOTIFY_BASE_API}/me/tracks?ids=${ids.join(",")}`,
+      `${SPOTIFY_BASE_API}/me/tracks?ids=${ids.join(",")}`
     );
 
     const request = new Request(
       `${SPOTIFY_BASE_API}/me/tracks?ids=${ids.join(",")}`,
       {
         method: "PUT",
-      },
+      }
     );
 
     request.headers.set("Authorization", `Bearer ${this.accessToken}`);
@@ -293,7 +298,7 @@ export class SpotifyAPI {
     console.log("Response status:", response.status);
     console.log(
       "Response headers:",
-      Object.fromEntries(response.headers.entries()),
+      Object.fromEntries(response.headers.entries())
     );
 
     if (!response.ok) {

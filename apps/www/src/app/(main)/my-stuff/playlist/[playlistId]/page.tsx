@@ -45,7 +45,7 @@ export default async function PlaylistPage({ params }: Props) {
             <h2 className="text-5xl font-semibold mb-3">
               {data.playlist.name}
             </h2>
-            <PlaylistActions playlistId={playlistId} />
+            <PlaylistActions playlistId={playlistId} playlistName={data.playlist.name} />
           </div>
           {data.playlist.description ? (
             <p className="text-muted-foreground mb-2 text-xl">
